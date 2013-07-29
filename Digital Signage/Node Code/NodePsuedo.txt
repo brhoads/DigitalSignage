@@ -1,0 +1,23 @@
+
+	
+	if (location == "Location" || org == "Org")
+		send notification to fill in settings and reset pi	
+	else{
+		if (inPiDee = -1)
+			insert information into table
+			db.run(insertcmd, function(error) {
+				PiDee = lastID;   //maybe this.lastID
+			}
+			send PiDee XBMC
+			piFile = build file path
+			UPDATE Pidentities (filelink) VALUES ('" + piFile + "') WHERE rowid = PiDee;
+		else
+			if (inPiDee exists in Pidentitities) 
+				SELECT (location, Orgcode) FROM Pidentities where rowid = PiDee;
+				piFile = find PiDee in the table and access files.
+			else 
+				send notification to fill in settings and reset pi
+	}
+		
+		
+		PLAY piFile!
