@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="service.digital.signage" name="Digital Signage" version="1" provider-name="Mission Systems Division">
+    <requires>
+        <import addon="xbmc.addon" version="12.0.0"/>
+        <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="script.module.simplejson" version="2.0.10"/>
+    </requires>
+    <extension point="xbmc.service" library="digitalsignage.py" start="login"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">This is the DD implementation for Digital Signage.</summary>
+        <description lang="en">Digital Signage is a  simple tool used to upload and display announcements, information, emergency warnings or IPTV by location or organization remotely throughout JSC.</description>
+        <disclaimer lang="en">Not everyone will have access to upload.</disclaimer>
+    </extension>
+</addon>
