@@ -3,6 +3,7 @@
     <category label="242424">
         <setting label="007" type="text"   id="Location" default="Location"/>
         <setting label="8" type="text"   id="Org"  default="Org Code"/>
+		<setting label="2223" type="text"   id="PiDee"  default="-1" visible="false"/>
         <setting label="123456789" type="ipaddress"   id="ServerIP" default="0.0.0.0" />
     </category>
 </settings>

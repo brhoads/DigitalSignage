@@ -32,3 +32,7 @@ msgstr "Pi Server IP"
 msgctxt "#007"
 msgid "Pi Location"
 msgstr "Pi Location"
+
+msgctxt "#2223"
+msgid "PiDee"
+msgstr "PiDee"

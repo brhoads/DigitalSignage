@@ -45,8 +45,9 @@ if (__name__ == "__main__"):
     piip = socket.gethostbyname(socket.gethostname())
     location = __addon__.getSetting("Location")
     org = __addon__.getSetting("Org")
+    piDee = __addon__.getSetting("PiDee")
     
-    pidentity = {'location' : location, 'org' : org, 'piip' : piip}
+    pidentity = {'location' : location, 'org' : org, 'piip' : piip, 'piDee' : piDee}
     
     data = location, piip, org
     
