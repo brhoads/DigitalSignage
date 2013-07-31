@@ -1,6 +1,6 @@
 
 	
-	if (location == "Location" || org == "Org")
+	if (location == "Location" || org == "Org Code")
 		send notification to fill in settings and reset pi	
 	else{
 		if (inPiDee = -1)
@@ -14,7 +14,16 @@
 		else
 			if (inPiDee exists in Pidentitities) 
 				SELECT (location, Orgcode) FROM Pidentities where rowid = PiDee;
-				piFile = find PiDee in the table and access files.
+				
+				if location = inLocation and orgcode = inOrg
+					piFile = find PiDee in the table and access files.
+				else {
+					UPDATE Pidentities (location) VALUES ('" + inLocation + "') WHERE rowid = PiDee;
+					UPDATE Pidentities (orgcode) VALUES ('" + inOrg + "') WHERE rowid = PiDee;
+					piFile = build file path
+					UPDATE Pidentities (filelink) VALUES ('" + piFile + "') WHERE rowid = PiDee;
+				}
+				
 			else 
 				send notification to fill in settings and reset pi
 	}
