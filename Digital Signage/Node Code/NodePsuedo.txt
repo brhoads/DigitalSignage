@@ -30,3 +30,16 @@
 		
 		
 		PLAY piFile!
+	
+modify addon.xml
+
+add another <extension> (like script.executor)
+new python file that accepts ID and saves it
+be like JSON test
+
+WATCHDOG-needs to load the variable from the file that gets saved with the ID.
+
+isntead of sayin failing...I cant contact specified server...
+
+location of stored data for digital signage addon.
+(portable_data)\userdata\addon_data\service.digital.signage\settings.xml
