@@ -17,29 +17,36 @@ function piDeeFunction(loc, org, body)
   }
   else
   {
-	if(piChunk.piDee = -5)
+	if(piChunk.piDee == 0)
 	{
-		db.run("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piChunk.piip + "', '" + piChunk.location + "', '" + piChunk.org + "', Time('now'), 'c:/blahblahblah')", function(error)
+		var stmt = db.prepare("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piChunk.piip + "', '" + piChunk.location + "', '" + piChunk.org + "', Time('now'), 'c:/blahblahblah')", function(error)
             {
 			    piChunk.piDee = this.lastID;
 		            db.run("UPDATE Pidentities SET filelink = 'XXXXXXXXXXXXXXXX' WHERE rowid = "+ piChunk.piDee);  
             });
-	        //send JSON command with piDee
-		    //build file path
-	      
-	     
-    }
+            stmt.run();
+	    stmt.finalize();
+                
+            //send JSON command with piDee
+                //build file path
+	         
+        }
 	else
 	{
-	     var locintab = db.run("SELECT Location FROM Pidentities WHERE rowid = " +piChunk.piDee);
-		 var orgintab = db.run("SELECT Orgcode FROM Pidentities WHERE rowid = " +piChunk.piDee);
-		 
-	console.log(locintab);
-	console.log(orgintab);
-		 if(loc == locintab && org == orgintab)
+	     
+	     stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = 60", function(err, row)
+             {
+		console.log(row.Location, row.Orgcode);
+             });
+
+	    stmt.run();
+            stmt.finalize();
+
+	      if(loc == row.Location && org == row.Orgcode)
 		 {
-			piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
-			console.log("We are the pirates who don't do anything");
+	          // piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
+	           db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY CAN DO IT!' WHERE rowid = 60");
+	           console.log("We are the pirates who don't do anything");
 		 }
 		 else
 		 {
@@ -49,7 +56,7 @@ function piDeeFunction(loc, org, body)
 		   db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piChunk.piDee);
 		 }
 	
-		
+	      	
 	
 	}
 	
