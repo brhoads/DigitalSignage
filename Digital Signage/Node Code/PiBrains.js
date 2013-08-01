@@ -9,24 +9,53 @@ var db = new sqlite3.Database(file);
 function piDeeFunction(loc, org, body)
 {
   var piChunk = JSON.parse(body);
+  var piFile = '';
+  
   if(piChunk.location == "Location" || piChunk.org == "Org Code")
   {
     console.log("Sending command to reset pi");
   }
   else
   {
-	if(piChunk.piDee = -1)
+	if(piChunk.piDee = -5)
 	{
 		db.run("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piChunk.piip + "', '" + piChunk.location + "', '" + piChunk.org + "', Time('now'), 'c:/blahblahblah')", function(error)
             {
 			    piChunk.piDee = this.lastID;
-		        console.log(piChunk.piDee);
+		            db.run("UPDATE Pidentities SET filelink = 'XXXXXXXXXXXXXXXX' WHERE rowid = "+ piChunk.piDee);  
             });
 	        //send JSON command with piDee
-		//build file path
-	//	db.run("UPDATE Pidentities (filelink) SET ('PI FILE PI FILE') WHERE rowid = piDee");
+		    //build file path
+	      
+	     
+    }
+	else
+	{
+	     var locintab = db.run("SELECT Location FROM Pidentities WHERE rowid = " +piChunk.piDee);
+		 var orgintab = db.run("SELECT Orgcode FROM Pidentities WHERE rowid = " +piChunk.piDee);
+		 
+	console.log(locintab);
+	console.log(orgintab);
+		 if(loc == locintab && org == orgintab)
+		 {
+			piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
+			console.log("We are the pirates who don't do anything");
+		 }
+		 else
+		 {
+		   db.run("UPDATE Pidentities SET Location = " +loc+" WHERE rowid = "+ piChunk.piDee);
+		   db.run("UPDATE Pidentities SET Orgcode = " +org +" WHERE rowid = "+ piChunk.piDee);
+		   //make piFile
+		   db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piChunk.piDee);
+		 }
+	
+		
+	
 	}
 	
+	db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) {
+		     console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
+	       });
   }
 }
 
@@ -69,7 +98,7 @@ http.createServer(function (inreq, res)
 		  }
 		}; 
 	   
-	   piDeeFunction(piChunk.location, piChunk.org, body);
+	  piDeeFunction(piChunk.location, piChunk.org, body);
 
 	   var userString = JSON.stringify(user); 
 
@@ -97,9 +126,9 @@ http.createServer(function (inreq, res)
 		   //error checks for now
 		   //selecting and printing
 		   //stmt.finalize();
-		   db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) {
-			     console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
-			});
+		   //db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) {
+			//     console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
+		//	});
 
 
 		}); 
