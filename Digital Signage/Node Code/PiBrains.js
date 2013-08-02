@@ -1,13 +1,23 @@
 var http = require('http'); 
 var fs = require("fs"); 
 var sqlite3 = require("sqlite3").verbose(); 
-var file = "test6.db";
-var exists = fs.existsSync(file);
+var file = "test9.db";
 var piChunk = '';
 var body = '';
 var db = new sqlite3.Database(file);
+var exists = fs.existsSync(file);
 
-
+   //create the database if it has not been created 
+	if(!exists)
+    {
+      //create Pidentities db file
+      console.log("Creating Pidentities Database."); 
+      fs.openSync(file, "w"); 
+      //create Pidentities table
+	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (PiD ROWID, timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
+    } 
+	
+	
 //NAME: piDeeFunction
 //PARAMETERS: loc, org, piDee, piip are all parts of parsed JSON (piChunk)
 //PURPOSE: This function works with the database. There are if-else statements
@@ -18,8 +28,9 @@ var db = new sqlite3.Database(file);
 
 function piDeeFunction(loc, org, piDee, piip)
 {
-   console.log("Entering piDeeFunction");
-  var piFile = '';
+   db.serialize(function(){
+   console.log("5. Entering piDeeFunction");
+   var piFile = '';
   
   //Location and Org Code are the default settings on the XBMC addon. They need to be set before anything can be run
   if(loc == "Location" || org == "Org Code")
@@ -47,59 +58,56 @@ function piDeeFunction(loc, org, piDee, piip)
         }
 	else
 	{
-		console.log("Entering the else"); 
+		console.log("6. Entering the else"); 
 	     var locintab = '';
 	     var orgintab = '';
          //updating the location and orgcode in the table if it does not match the location/org in XBMC
-	     var stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = 60"); 
-		console.log("Before the stmt.get (running it)"); 
-	       stmt.get(function(err, row)
-           {
-				console.log("row.location, row.Orgcode: "+ row.Location, row.Orgcode);
+	    
+		var stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = 1"); 
+		 console.log("7. Before the stmt.get (running it)"); 
+	   
+		  stmt.get(function(err, row)
+		   {
+				console.log("8. row.location, row.Orgcode: "+ row.Location, row.Orgcode);
 				locintab = row.Location;
 				orgintab = row.Orgcode;
-				console.log("inside .run locintab and orgintab: "+ locintab, orgintab)
+				console.log("9. inside .run locintab and orgintab: "+ locintab, orgintab)
 				
 				if(loc != locintab || org != orgintab)
 				{
-				   db.run("UPDATE Pidentities SET Location = '" +loc+"', Orgcode = '" +org +"' WHERE rowid = "+ piDee).finalize();
+				   db.run("UPDATE Pidentities SET Location = '" +loc+"', Orgcode = '" +org+"' WHERE rowid = "+ piDee).finalize();
+				   console.log("Lovely if statement about location and org");
 				   //db.run("UPDATE Pidentities SET Orgcode = '" +org +"' WHERE rowid = "+ piChunk.piDee);
 				}  
-			});
 			
-	       stmt.finalize();
-
-	      console.log("Outside stmt.get: " + loc, org);	   
+			   console.log("10. After get, before finalize");
+				
+			});
+			//stmt.finalize();
+			
+	      console.log("11. Outside stmt.get: " + loc, org);	   
 	
 		  // piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
 		  // db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY CAN DO IT!' WHERE rowid = 60");
 		
 	}
-	console.log("Random spot after the outside stmt.get but before table"); 
+	console.log("12. Random spot after the outside stmt.get but before table"); 
   }
   	//updating the filelink for specific piDee in the table
 	db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piDee);
-	//printing for error checking
-	
+	//printing	
 	db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) 
 	{
 	   console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
 	});
+});
 }
+
 
 http.createServer(function (inreq, res)
 {
-
-   //create the database if it has not been created 
-   if(!exists)
-    {
-      //create Pidentities db file
-      console.log("Creating Pidentities Database."); 
-      fs.openSync(file, "w"); 
-      //create Pidentities table
-      db.run("CREATE TABLE Pidentities (PiD ROWID, timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
-    } 
-
+ 
+   console.log("1. SERVER SERVER");
    inreq.on('data', function (data)
    {
       body += data;
@@ -110,9 +118,10 @@ http.createServer(function (inreq, res)
    {
 	   res.writeHead(200, {'Content-Type': 'application/json'});
 	   res.end('{OK}\n');
-	 console.log("Parsing JSON") 
+	
+	 console.log("3. Parsing JSON") 
      piChunk = JSON.parse(body);
-	 console.log("Calling piDeeFunction")
+	 console.log("4. Calling piDeeFunction")
      piDeeFunction(piChunk.location, piChunk.org, piChunk.piDee, piChunk.piip);
 		
 		var user = { 
@@ -187,10 +196,10 @@ http.createServer(function (inreq, res)
 
    });
 
-	console.log('This is the end');
+	console.log('2. This is the end');
     
+
 	//Close near server shut down
 	//Google to find out what that http.COMMAND is
-	//db.close();
 	
 }).listen(8124);
