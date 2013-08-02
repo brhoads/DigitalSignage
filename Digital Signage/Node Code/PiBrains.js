@@ -3,67 +3,88 @@ var fs = require("fs");
 var sqlite3 = require("sqlite3").verbose(); 
 var file = "test6.db";
 var exists = fs.existsSync(file);
+var piChunk = '';
 var body = '';
 var db = new sqlite3.Database(file);
 
-function piDeeFunction(loc, org, body)
+
+//NAME: piDeeFunction
+//PARAMETERS: loc, org, piDee, piip are all parts of parsed JSON (piChunk)
+//PURPOSE: This function works with the database. There are if-else statements
+//         that check to make sure the piDee is set to the XBMC add-on. If there
+//         is no piDee, it creates a new entry in the Pidentities table. If
+//         there is a piDee, it checks to make sure everything in the table
+//         is correct and updates the entries. Then the filepath is made and played.
+
+function piDeeFunction(loc, org, piDee, piip)
 {
-  var piChunk = JSON.parse(body);
+   console.log("Entering piDeeFunction");
   var piFile = '';
   
-  if(piChunk.location == "Location" || piChunk.org == "Org Code")
+  //Location and Org Code are the default settings on the XBMC addon. They need to be set before anything can be run
+  if(loc == "Location" || org == "Org Code")
   {
     console.log("Sending command to reset pi");
   }
   else
   {
-	if(piChunk.piDee == 0)
+    //checks to see if piDee is the default value from XBMC. This means it needs to 
+	//create a new entry into the Pidentities table and assign a new piDee to the Pi
+	if(piDee == 0)
 	{
-		var stmt = db.prepare("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piChunk.piip + "', '" + piChunk.location + "', '" + piChunk.org + "', Time('now'), 'c:/blahblahblah')", function(error)
+		console.log("Entered the if pjiDee = 0 statement"); 
+		var stmt = db.prepare("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piip + "', '" + loc + "', '" + org + "', Time('now'), 'c:/blahblahblah')", function(error)
             {
-			    piChunk.piDee = this.lastID;
-		            db.run("UPDATE Pidentities SET filelink = 'XXXXXXXXXXXXXXXX' WHERE rowid = "+ piChunk.piDee);  
+			    piDee = this.lastID;
+		        //db.run("UPDATE Pidentities SET filelink = 'XXXXXXXXXXXXXXXX' WHERE rowid = "+ piDee);  
             });
-            stmt.run();
+        
+		stmt.run();
 	    stmt.finalize();
-                
-            //send JSON command with piDee
-                //build file path
+        //send JSON command with piDee back to XBMC
+        //build file path = piFile
 	         
         }
 	else
 	{
-	     
-	     stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = 60", function(err, row)
-             {
-		console.log(row.Location, row.Orgcode);
-             });
+		console.log("Entering the else"); 
+	     var locintab = '';
+	     var orgintab = '';
+         //updating the location and orgcode in the table if it does not match the location/org in XBMC
+	     var stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = 60"); 
+		console.log("Before the stmt.get (running it)"); 
+	       stmt.get(function(err, row)
+           {
+				console.log("row.location, row.Orgcode: "+ row.Location, row.Orgcode);
+				locintab = row.Location;
+				orgintab = row.Orgcode;
+				console.log("inside .run locintab and orgintab: "+ locintab, orgintab)
+				
+				if(loc != locintab || org != orgintab)
+				{
+				   db.run("UPDATE Pidentities SET Location = '" +loc+"', Orgcode = '" +org +"' WHERE rowid = "+ piDee).finalize();
+				   //db.run("UPDATE Pidentities SET Orgcode = '" +org +"' WHERE rowid = "+ piChunk.piDee);
+				}  
+			});
+			
+	       stmt.finalize();
 
-	    stmt.run();
-            stmt.finalize();
-
-	      if(loc == row.Location && org == row.Orgcode)
-		 {
-	          // piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
-	           db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY CAN DO IT!' WHERE rowid = 60");
-	           console.log("We are the pirates who don't do anything");
-		 }
-		 else
-		 {
-		   db.run("UPDATE Pidentities SET Location = " +loc+" WHERE rowid = "+ piChunk.piDee);
-		   db.run("UPDATE Pidentities SET Orgcode = " +org +" WHERE rowid = "+ piChunk.piDee);
-		   //make piFile
-		   db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piChunk.piDee);
-		 }
+	      console.log("Outside stmt.get: " + loc, org);	   
 	
-	      	
-	
+		  // piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
+		  // db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY CAN DO IT!' WHERE rowid = 60");
+		
 	}
-	
-	db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) {
-		     console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
-	       });
+	console.log("Random spot after the outside stmt.get but before table"); 
   }
+  	//updating the filelink for specific piDee in the table
+	db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piDee);
+	//printing for error checking
+	
+	db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) 
+	{
+	   console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
+	});
 }
 
 http.createServer(function (inreq, res)
@@ -84,17 +105,16 @@ http.createServer(function (inreq, res)
       body += data;
    });
 
-  // var test = JSON.parse(body);
-  // console.log(test.location);
 
    inreq.on('end', function()
    {
 	   res.writeHead(200, {'Content-Type': 'application/json'});
 	   res.end('{OK}\n');
-	  
-          var piChunk = JSON.parse(body);
-        //  console.log(piChunk.location);
-
+	 console.log("Parsing JSON") 
+     piChunk = JSON.parse(body);
+	 console.log("Calling piDeeFunction")
+     piDeeFunction(piChunk.location, piChunk.org, piChunk.piDee, piChunk.piip);
+		
 		var user = { 
 		  jsonrpc: '2.0', 
 		  id: '1', 
@@ -105,8 +125,6 @@ http.createServer(function (inreq, res)
 		  }
 		}; 
 	   
-	  piDeeFunction(piChunk.location, piChunk.org, body);
-
 	   var userString = JSON.stringify(user); 
 
 	   var headers = { 
@@ -124,8 +142,8 @@ http.createServer(function (inreq, res)
 		console.log('Before outgoing request');
 		
 		//boolean values for error checking to keep clean
-		
-	   db.serialize(function() { 
+		//BELOW: old database code
+	   //db.serialize(function() { 
 		   //look to see if create needs to be in db.serialize
      	   //var stmt = db.prepare("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piChunk.piip + "', '" + piChunk.location + "', '" + piChunk.org + "', Time('now'), 'c:/blahblahblah')");
 		  // stmt.run();
@@ -136,9 +154,7 @@ http.createServer(function (inreq, res)
 		   //db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) {
 			//     console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
 		//	});
-
-
-		}); 
+		//}); 
            //db.close();
 		
 	   // Setup the request. The options parameter is 
