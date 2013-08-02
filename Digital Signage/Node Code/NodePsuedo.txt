@@ -3,20 +3,20 @@
 	if (location == "Location" || org == "Org Code")
 		send notification to fill in settings and reset pi	
 	else{
-		if (inPiDee = -1)
+		if (piChunk.piDee = -1)
 			insert information into table
 			db.run(insertcmd, function(error) {
-				PiDee = lastID;   //maybe this.lastID
+				piChunk.piDee = this.lastID;   //maybe this.lastID
 			}
 			send PiDee XBMC
 			piFile = build file path
-			UPDATE Pidentities (filelink) VALUES ('" + piFile + "') WHERE rowid = PiDee;
+			UPDATE Pidentities (filelink) VALUES ('" + piFile + "') WHERE rowid = piChunk.piDee;
 		else
-			if (inPiDee exists in Pidentitities) 
+			if (piChunk.piDee exists in Pidentitities) 
 				SELECT (location, Orgcode) FROM Pidentities where rowid = PiDee;
 				
 				if location = inLocation and orgcode = inOrg
-					piFile = find PiDee in the table and access files.
+					select pifile 
 				else {
 					UPDATE Pidentities (location) VALUES ('" + inLocation + "') WHERE rowid = PiDee;
 					UPDATE Pidentities (orgcode) VALUES ('" + inOrg + "') WHERE rowid = PiDee;
