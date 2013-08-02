@@ -3,11 +3,13 @@ var fs = require("fs");
 var util=require('util');
 var querystring=require('querystring');
 var sqlite3 = require("sqlite3").verbose(); 
+var mkdirp = require('mkdirp');
 var file = "test10.db";
 var piChunk = '';
 var body = '';
 var db = new sqlite3.Database(file);
 var exists = fs.existsSync(file);
+
 
    //create the database if it has not been created 
    if(!exists)
@@ -19,6 +21,19 @@ var exists = fs.existsSync(file);
 	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
     } 
 
+function createNewFolder(piDee)
+{
+   mkdirp('/root/piFilling/' +piDee, function (err) {
+    if (err) console.error(err)
+    else console.log('pow!')
+   });
+}	
+
+function populateFolder()
+{
+
+}
+	
 function sendpiDeeSetting(piip, piDee)
 {
    //xbmc.sendCommand('{"jsonrpc": "2.0", "method": "Addons.ExecuteAddon", "params": { "wait": true, "addonid": "service.digital.signage", "params": ["' + piDee + '"]},  "id": 0}');
@@ -147,13 +162,13 @@ function createPidentity(loc, org, piDee, piip)
 				console.log("inside");
 				console.log(piDee);
 				sendpiDeeSetting(piip, piDee);
+				createNewFolder(piDee);    
             });
    
 		//stmt.run();
 	  //  stmt.finalize();
-		console.log(piDee);
-        //sendpiDeeSetting(piip, piDee);
-        //build file path = piFile         
+	    //sendpiDeeSetting(piip, piDee);
+        
 }
 
 function updatePidentity(loc, org, piDee, piip)
@@ -315,7 +330,6 @@ http.createServer(function (inreq, res)
 			 responseString += data;
 		  }); 
 		
-  		 console.log(body);
 		 console.log('Leaving outgoing request');
 		 
 		  res.on('end', function() { 
