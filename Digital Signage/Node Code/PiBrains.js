@@ -1,5 +1,7 @@
 var http = require('http'); 
 var fs = require("fs"); 
+var util=require('util');
+var querystring=require('querystring');
 var sqlite3 = require("sqlite3").verbose(); 
 var file = "test9.db";
 var piChunk = '';
@@ -202,4 +204,30 @@ http.createServer(function (inreq, res)
 	//Close near server shut down
 	//Google to find out what that http.COMMAND is
 	
-}).listen(8124);
+}).listen(8123);
+
+//EMERGENCY ALERT
+var HTMLserver=http.createServer(function(req,res)
+{
+	console.log('collectDATA for Emergency Service');
+	if (req.method=='GET')
+	{
+		console.log('HOOTINANNY');
+		res.end('<form action="/Home/Index" method="POST" name="form1">Enter Text:<input name="txtInput" type="text" id="txtInput"/><button type="submit" id="btnPost">Post Data</button></form></body></html>');
+	}
+	else
+	{
+		var alertChunk = '';
+		req.on('data', function (data)
+		{
+			alertChunk += data;
+		});
+		req.on('end', function () 
+		{
+			console.log(alertChunk + "<-Posted Data Test");
+			
+			res.end(util.inspect(querystring.parse(alertChunk)));
+		});
+	}
+}).listen(8080);
+
