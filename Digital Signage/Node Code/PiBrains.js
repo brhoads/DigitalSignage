@@ -9,8 +9,10 @@ var piChunk = '';
 var body = '';
 var db = new sqlite3.Database(file);
 var exists = fs.existsSync(file);
-//var ORG_ROOT = absolute path to Org root folder
-//var LOC_ROOT = absolute path to location root folder
+var ORG_ROOT = "/media/piFilling/Org"
+var LOC_ROOT = "/media/piFilling/Location"  
+var PIFOLDERS_ROOT = "/root/piFolders/"    //this holds the folders with the symlinks the pi accesses
+var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders" 
 
    //create the database if it has not been created 
    if(!exists)
@@ -24,33 +26,37 @@ var exists = fs.existsSync(file);
 
 function createNewFolder(piDee)
 {
-   mkdirp('/root/piFilling/' +piDee, function (err) {
+   mkdirp(PIFOLDERS_ROOT + piDee, function (err) {
     if (err) console.error(err)
     else console.log('pow!')
-	//save piFolder
+	db.run("UPDATE Pidentities SET filelink = '" + SMB_MNT_ROOT + "/" + piDee + "' WHERE rowid = " + piDee);
    });
 }	
 
-function traverseFolders()
+function traverseFolders(traverseBy, piFolder, target)
 {
-   if(traverseBy == org)
-	 {
-       thisRoot = ORG_ROOT
-	 }
+   var thisRoot = '';
+   
+   if(traverseBy == "org")
+	{
+       thisRoot = ORG_ROOT;
+	}
    else
-	 {
-	   thisRoot = LOC_ROOT
-	 }
+	{
+	   thisRoot = LOC_ROOT;
+	}
     
-	//traverse down
+   //traverse down
    // find location
+   //targetLocation is a result of walking down
    // start traversing back up -> piLink is saved
-
-  //  while(  currentLocation  != thisRoot  )
-  //   {
-       //  piLink for each folder is saved until we are back to the root.
-       //  write this link to the folder?
-  //   }
+	
+   while( targetLocation != thisRoot  )   //walking back up
+    {
+      // piLink for each folder is saved until we are back to the root.
+      // write this link to the folder?
+      targetLocation = path.normalize(targetLocation + path.sep + "..");
+	}
 
 }
 
