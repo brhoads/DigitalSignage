@@ -9,7 +9,8 @@ var piChunk = '';
 var body = '';
 var db = new sqlite3.Database(file);
 var exists = fs.existsSync(file);
-
+//var ORG_ROOT = absolute path to Org root folder
+//var LOC_ROOT = absolute path to location root folder
 
    //create the database if it has not been created 
    if(!exists)
@@ -26,13 +27,40 @@ function createNewFolder(piDee)
    mkdirp('/root/piFilling/' +piDee, function (err) {
     if (err) console.error(err)
     else console.log('pow!')
+	//save piFolder
    });
 }	
 
-function populateFolder()
+function traverseFolders()
 {
+   if(traverseBy == org)
+	 {
+       thisRoot = ORG_ROOT
+	 }
+   else
+	 {
+	   thisRoot = LOC_ROOT
+	 }
+    
+	//traverse down
+   // find location
+   // start traversing back up -> piLink is saved
+
+  //  while(  currentLocation  != thisRoot  )
+  //   {
+       //  piLink for each folder is saved until we are back to the root.
+       //  write this link to the folder?
+  //   }
 
 }
+
+function populateFolder(piFolder, org, location, piDee)
+{
+  // delete all the links
+  // traverseFolder(“org”, piFolder, org)
+  // traverseFolder(“loc”, piFolder, location)
+}
+
 	
 function sendpiDeeSetting(piip, piDee)
 {
