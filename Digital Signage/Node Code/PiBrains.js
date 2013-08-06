@@ -21,8 +21,9 @@ var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders"
       console.log("Creating Pidentities Database."); 
       fs.openSync(file, "w"); 
       //create Pidentities table
-	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
+	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (PiD ROWID, timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
     } 
+	
 
 function createNewFolder(piDee)
 {
@@ -57,6 +58,34 @@ function traverseFolders(traverseBy, piFolder, target)
       // write this link to the folder?
       targetLocation = path.normalize(targetLocation + path.sep + "..");
 	}
+	
+//NAME: piDeeFunction
+//PARAMETERS: loc, org, piDee, piip are all parts of parsed JSON (piChunk)
+//PURPOSE: This function works with the database. There are if-else statements
+//         that check to make sure the piDee is set to the XBMC add-on. If there
+//         is no piDee, it creates a new entry in the Pidentities table. If
+//         there is a piDee, it checks to make sure everything in the table
+//         is correct and updates the entries. Then the filepath is made and played.
+
+function piDeeFunction(loc, org, piDee, piip)
+{
+   db.serialize(function(){
+   console.log("5. Entering piDeeFunction");
+   var piFile = '';
+  
+  //Location and Org Code are the default settings on the XBMC addon. They need to be set before anything can be run
+  if(loc == "Location" || org == "Org Code")
+  {
+    console.log("Sending command to reset pi");
+  }
+  else
+  {
+    //checks to see if piDee is the default value from XBMC. This means it needs to 
+	//create a new entry into the Pidentities table and assign a new piDee to the Pi
+	if(piDee == 0)
+	{
+		console.log("Entered the if pjiDee = 0 statement"); 
+		var stmt = db.prepare("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piip + "', '" + loc + "', '" + org + "', Time('now'), 'c:/blahblahblah')", function(error)
 
 }
 
@@ -198,98 +227,64 @@ function createPidentity(loc, org, piDee, piip)
 				sendpiDeeSetting(piip, piDee);
 				createNewFolder(piDee);    
             });
-   
-		//stmt.run();
-	  //  stmt.finalize();
-	    //sendpiDeeSetting(piip, piDee);
         
-}
-
-function updatePidentity(loc, org, piDee, piip)
-{
-   
-    var locintab = '';
-    var orgintab = '';
-    //updating the location and orgcode in the table if it does not match the location/org in XBMC
-	
-	var stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = 1"); 
-	console.log("7. Before the stmt.get (running it)"); 
-	
-	stmt.get(function(err, row)
+		stmt.run();
+	    stmt.finalize();
+        //send JSON command with piDee back to XBMC
+        //build file path = piFile
+	         
+        }
+	else
 	{
-	   console.log("8. row.location, row.Orgcode: "+ row.Location, row.Orgcode);
-	   locintab = row.Location;
-	   orgintab = row.Orgcode;
-	   console.log("9. inside .run locintab and orgintab: "+ locintab, orgintab);
-		
-		if(loc != locintab || org != orgintab)
-		{
-		   db.run("UPDATE Pidentities SET Location = '" +loc+"', Orgcode = '" +org+"' WHERE rowid =  "+ piDee);
-		   console.log("9.5 Lovely if statement about location and org");
-		   //db.run("UPDATE Pidentities SET Orgcode = '" +org +"' WHERE rowid = "+ piDee);
-		}  
-	
-	   console.log("10. After get, before finalize");
-			
-	});
-	stmt.finalize();
-		
-	console.log("11. Outside stmt.get: " + loc, org);	   
-
-	// piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
-	// db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY CAN DO IT!' WHERE rowid = 60");
-	
-}	
-	
-//NAME: piDeeFunction
-//PARAMETERS: loc, org, piDee, piip are all parts of parsed JSON (piChunk)
-//PURPOSE: This function works with the database. There are if-else statements
-//         that check to make sure the piDee is set to the XBMC add-on. If there
-//         is no piDee, it creates a new entry in the Pidentities table. If
-//         there is a piDee, it checks to make sure everything in the table
-//         is correct and updates the entries. Then the filepath is made and played.
-function piDeeFunction(loc, org, piDee, piip)
-{
-   db.serialize(function(){
-   console.log("5. Entering piDeeFunction");
-   var piFile = '';
-   var piDeez = piDee;
-  //Location and Org Code are the default settings on the XBMC addon. They need to be set before anything can be run
-  if(loc == "Location" || org == "Org Code")
-    {
-       setTimeout(sendNotification(piip), 5000);
-    }
-  else
-    {
-      //checks to see if piDee is the default value from XBMC. This means it needs to 
-  	  //create a new entry into the Pidentities table and assign a new piDee to the Pi
-  	  if(piDee == -1)
-	   {
-		createPidentity(loc, org, piDeez, piip);
-       }
-	   
-	  else
-	   {
 		console.log("6. Entering the else"); 
-	    updatePidentity(loc, org, piDeez, piip);
-	   }
+	     var locintab = '';
+	     var orgintab = '';
+         //updating the location and orgcode in the table if it does not match the location/org in XBMC
+	    
+		var stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = 1"); 
+		 console.log("7. Before the stmt.get (running it)"); 
+	   
+		  stmt.get(function(err, row)
+		   {
+				console.log("8. row.location, row.Orgcode: "+ row.Location, row.Orgcode);
+				locintab = row.Location;
+				orgintab = row.Orgcode;
+				console.log("9. inside .run locintab and orgintab: "+ locintab, orgintab)
+				
+				if(loc != locintab || org != orgintab)
+				{
+				   db.run("UPDATE Pidentities SET Location = '" +loc+"', Orgcode = '" +org+"' WHERE rowid = "+ piDee).finalize();
+				   console.log("Lovely if statement about location and org");
+				   //db.run("UPDATE Pidentities SET Orgcode = '" +org +"' WHERE rowid = "+ piChunk.piDee);
+				}  
+			
+			   console.log("10. After get, before finalize");
+				
+			});
+			//stmt.finalize();
+			
+	      console.log("11. Outside stmt.get: " + loc, org);	   
+	
+		  // piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
+		  // db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY CAN DO IT!' WHERE rowid = 60");
+		
+	}
 	console.log("12. Random spot after the outside stmt.get but before table"); 
-     //updating the filelink for specific piDee in the table
-    //db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piDee);
-   }
-  
-
-  //printing	
-  db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) 
-   {
-	 console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
-   });
-  });
+  }
+  	//updating the filelink for specific piDee in the table
+	db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piDee);
+	//printing	
+	db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) 
+	{
+	   console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
+	});
+});
 }
+
 
 http.createServer(function (inreq, res)
 {
-    
+ 
    console.log("1. SERVER SERVER");
    inreq.on('data', function (data)
    {
@@ -302,20 +297,20 @@ http.createServer(function (inreq, res)
 	   res.writeHead(200, {'Content-Type': 'application/json'});
 	   res.end('{OK}\n');
 	
+	 console.log("3. Parsing JSON") 
 	 console.log("3. Parsing JSON"); 
 	 console.log("3.5" + body);
      piChunk = JSON.parse(body);
-	 console.log("4. Calling piDeeFunction");
+	 console.log("4. Calling piDeeFunction")
      piDeeFunction(piChunk.location, piChunk.org, piChunk.piDee, piChunk.piip);
 		
 		var user = { 
 		  jsonrpc: '2.0', 
 		  id: '1', 
-		  method: 'Player.Open', 
+		  method: 'GUI.ShowNotification',  //eventually player.open
 		  params: {
-			item: {
-			    directory: 'smb://10.128.1.158/Media/gpt/root'
-			 }
+			 title: 'HAYLEY AND PETER ROCK!',
+			 message: body 
 		  }
 		}; 
 	   
@@ -359,13 +354,14 @@ http.createServer(function (inreq, res)
 		  res.setEncoding('utf-8'); 
 		  var responseString = ''; 
 		  
-		  res.on('data', function(data) 
-		  {
+		  res.on('data', function(data) {
 			 responseString += data;
 		  }); 
-		
+		 console.log(body);
 		 console.log('Leaving outgoing request');
 		 
+          	 
+
 		  res.on('end', function() { 
 			 var resultObject = JSON.parse(responseString); 
 		   }); 
@@ -375,9 +371,9 @@ http.createServer(function (inreq, res)
 		  // TODO: handle error. 
 		});
 
-	  outreq.write(userString); 
-	  outreq.end();
-	   body='';	
+	   outreq.write(userString); 
+	   outreq.end();
+
    });
 
 	console.log('2. This is the end');
@@ -388,14 +384,29 @@ http.createServer(function (inreq, res)
 	
 }).listen(8123);
 
-//EMERGENCY ALERT
+ //EMERGENCY ALERT
 var HTMLserver=http.createServer(function(req,res)
 {
 	console.log('collectDATA for Emergency Service');
 	if (req.method=='GET')
 	{
 		console.log('HOOTINANNY');
-		res.end('<form action="/Home/Index" method="POST" name="form1">Enter Text:<input name="txtInput" type="text" id="txtInput"/><button type="submit" id="btnPost">Post Data</button></form></body></html>');
+		res.end('<html> \
+					<body> \
+						<form action="/Home/Index" method="POST" name="form1"> \
+							<input type="radio" name="radio1" value="IPTV">IPTV \
+								<select name="Channels"> \
+								<option value="NASATV">NASATV</option> \
+								<option value="ISS1">ISS1</option> \
+								<option value="ISS2">ISS2</option> \
+								<option value="ISS3">ISS3</option> \
+								</select> <br> \
+							<input type="radio" name="radio1" value="EMERGENCY FOLDER">EMERGENCY FOLDER <br> \
+							Enter Text:<input name="txtInput" type="text" id="txtInput"/> \
+							<button type="submit" id="btnPost">Post Data</button> \
+						</form> \
+					</body> \
+				</html>');
 	}
 	else
 	{
@@ -411,5 +422,5 @@ var HTMLserver=http.createServer(function(req,res)
 			res.end(util.inspect(querystring.parse(alertChunk)));
 		});
 	}
-}).listen(8080);
+}).listen(8080); 
 

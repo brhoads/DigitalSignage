@@ -48,7 +48,7 @@ def watchdog():
 if (__name__ == "__main__"):
     xbmc.log('Version %s started' % __addonversion__)
     print "Digital Signage add-on is active"
- 
+    
     #gather information such as Pi IP Address and settings information from addon
     piip = socket.gethostbyname(socket.gethostname())
     location = __addon__.getSetting("Location")
@@ -66,13 +66,4 @@ if (__name__ == "__main__"):
     print simplejson.dumps(pidentity)
     response = urllib2.urlopen(req, simplejson.dumps(pidentity))
     print response
-	#time.sleep(5)
-	
-    #watchdog()
- 
-    # Emergency Alert
-    # req2 = urllib2.Request('http://192.168.126.128:8080')
-    # req2.add_header('Content-Type','application/html')
-    # print 'BANANA'
-    # response2 = urllib2.urlopen(req2, 'GOOBER')
-    # print response2
+    watchdog()
