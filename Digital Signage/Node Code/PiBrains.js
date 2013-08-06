@@ -394,15 +394,23 @@ var HTMLserver=http.createServer(function(req,res)
 		res.end('<html> \
 					<body> \
 						<form action="/Home/Index" method="POST" name="form1"> \
-							<input type="radio" name="radio1" value="IPTV">IPTV \
+							TOGGLE CONTROL \
+							<input type="radio" name="Toggleradio" value="ON">ON \
+							<input type="radio" name="Toggleradio" value="OFF">OFF <br> <br>\
+							<input type="radio" name="Destinationradio" value="IPTV">IPTV \
 								<select name="Channels"> \
 								<option value="NASATV">NASATV</option> \
 								<option value="ISS1">ISS1</option> \
 								<option value="ISS2">ISS2</option> \
 								<option value="ISS3">ISS3</option> \
 								</select> <br> \
-							<input type="radio" name="radio1" value="EMERGENCY FOLDER">EMERGENCY FOLDER <br> \
-							Enter Text:<input name="txtInput" type="text" id="txtInput"/> \
+							<input type="radio" name="Destinationradio" value="EMERGENCY FOLDER">EMERGENCY FOLDER \
+							<br><br> Select the Destination(s) of Notification. <br> <br> \
+							<input type="checkbox" name="PIdestination" value="PI 1">PI 1<br> \
+							<input type="checkbox" name="PIdestination" value="PI 2">PI 2<br> \
+							<input type="checkbox" name="PIdestination" value="PI 3">PI 3<br> \
+							<input type="checkbox" name="PIdestination" value="PI 4">PI 4<br> \
+							<input type="checkbox" name="PIdestination" value="PI 5">PI 5<br> \
 							<button type="submit" id="btnPost">Post Data</button> \
 						</form> \
 					</body> \
