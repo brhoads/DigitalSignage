@@ -41,9 +41,6 @@ def watchdog():
             time.sleep(60)
 
 
-    
-
-
 #Standard setup of main
 if (__name__ == "__main__"):
     xbmc.log('Version %s started' % __addonversion__)
@@ -63,7 +60,7 @@ if (__name__ == "__main__"):
     
     print data
      
-    req = urllib2.Request('http://' + ServerIP + ':8124')
+    req = urllib2.Request('http://' + ServerIP + ':8123')
     req.add_header('Content-Type', 'application/json')
     print simplejson.dumps(pidentity)
     response = urllib2.urlopen(req, simplejson.dumps(pidentity))

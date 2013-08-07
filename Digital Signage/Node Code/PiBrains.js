@@ -21,7 +21,7 @@ var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders"
       console.log("Creating Pidentities Database."); 
       fs.openSync(file, "w"); 
       //create Pidentities table
-	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (PiD ROWID, timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
+	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
     } 
 	
 function createNewFolder(piDee, org, loc)
@@ -375,14 +375,14 @@ function playPiFilling(piDee, piip)
 		  res.setEncoding('utf-8'); 
 		  var responseString = ''; 
 		  
-		  res.on('data', function(data) {
+		  res.on('data', function(data) 
+		  {
 			 responseString += data;
 		  }); 
 		
+		
 		 console.log('Leaving outgoing request');
 		 
-          	 
-
 		  res.on('end', function() { 
 			 var resultObject = JSON.parse(responseString); 
 		   }); 
@@ -429,3 +429,52 @@ http.createServer(function (inreq, res)
 	//Google to find out what that http.COMMAND is
 	
 }).listen(8124);
+
+//EMERGENCY ALERT
+var HTMLserver=http.createServer(function(req,res)
+{
+	console.log('collectDATA for Emergency Service');
+	if (req.method=='GET')
+	{
+		console.log('INITAL STATEMENT');
+		res.end('<html> \
+					<body> \
+						<form action="/Home/Index" method="POST" name="form1"> \
+							TOGGLE CONTROL \
+							<input type="radio" name="Control" value="ON">ON \
+							<input type="radio" name="Control" value="OFF">OFF <br> <br>\
+							Select the Source of Notification <br> <br> \
+							<input type="radio" name="Source" value="IPTV">IPTV \
+								<select name="Channels"> \
+								<option value="NASATV">NASATV</option> \
+								<option value="ISS1">ISS1</option> \
+								<option value="ISS2">ISS2</option> \
+								<option value="ISS3">ISS3</option> \
+								</select> <br> \
+							<input type="radio" name="Source" value="EMERGENCY FOLDER">EMERGENCY FOLDER \
+							<br><br> Select the Destination(s) of Notification. <br> <br> \
+							<input type="checkbox" name="Destination" value="PI 1>PI 1<br> \
+							<input type="checkbox" name="Destination" value="PI 2">PI 2<br> \
+							<input type="checkbox" name="Destination" value="PI 3">PI 3<br> \
+							<input type="checkbox" name="Destination" value="PI 4">PI 4<br> \
+							<input type="checkbox" name="Destination" value="PI 5">PI 5<br> \
+							<button type="submit" id="btnPost">Post Data</button> \
+						</form> \
+					</body> \
+				</html>');
+	}
+	else
+	{
+		var alertChunk = '';
+		req.on('data', function (data)
+		{
+			alertChunk += data;
+		});
+		req.on('end', function () 
+		{
+			console.log(alertChunk + "<-Posted Data Test");
+			
+			res.end(util.inspect(querystring.parse(alertChunk)));
+		});
+	}
+}).listen(8080); 
