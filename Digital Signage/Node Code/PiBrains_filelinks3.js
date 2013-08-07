@@ -1,7 +1,6 @@
 var http = require('http'); 
 var fs = require('fs'); 
-var util=require('util');
-var querystring=require('querystring');
+var sqlite3 = require('sqlite3').verbose(); 
 var mkdirp = require('mkdirp');
 var path = require('path');
 var file = "test10.db";
@@ -11,7 +10,7 @@ var db = new sqlite3.Database(file);
 var exists = fs.existsSync(file);
 var ORG_ROOT = "/media/piFilling/Org"
 var LOC_ROOT = "/media/piFilling/Location"  
-var PIFOLDERS_ROOT = "/media/piFolders/"    //this holds the folders with the symlinks the pi accesses
+var PIFOLDERS_ROOT = "/media/piFolders"    //this holds the folders with the symlinks the pi accesses
 var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders" 
 
    //create the database if it has not been created 
@@ -21,12 +20,12 @@ var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders"
       console.log("Creating Pidentities Database."); 
       fs.openSync(file, "w"); 
       //create Pidentities table
-	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (PiD ROWID, timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
+	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
     } 
-	
+
 function createNewFolder(piDee, org, loc)
 {
-   mkdirp(PIFOLDERS_ROOT + piDee, function (err) {
+   mkdirp(PIFOLDERS_ROOT + path.sep + piDee, function (err) {
     if (err) console.error(err)
     else console.log('pow!')
 	db.run("UPDATE Pidentities SET filelink = '" + SMB_MNT_ROOT + "/" + piDee + "' WHERE rowid = " + piDee);
@@ -52,58 +51,43 @@ function traverseFolders(traverseBy, piDee, target)
 	   thisRoot = LOC_ROOT;
 	}
     console.log("Traversing by " + thisRoot);
-	
 	var finder = require('findit2').find(thisRoot);  
-    
 	finder.on('directory', function(dir, stat){
 
 	  if(path.basename(dir) == target)
 	   {
 	     targetLocation = dir;
 		 console.log("Matched with the : " + dir);
-		 while( targetLocation != thisRoot  )  
-          {
+		
 			console.log("Inside the walk up" + targetLocation);
-			fs.symlink(targetLocation, PIFOLDERS_ROOT + path.sep + piDee + path.sep + path.basename(targetLocation), 'dir', function(err){
+			/*fs.symlink(targetLocation, PIFOLDERS_ROOT + path.sep + piDee + path.sep + path.basename(targetLocation), 'dir', function(err){
 			   if (err) console.error(err);
-			 });
-			 targetLocation = path.normalize(targetLocation + path.sep + "..");
+			 });*/
+			 var innerFinder = require('findit2').find(thisRoot);
+			 innerFinder.on('file', function (file, stat) 
+			     {
+                    if(targetLocation.indexOf(path.dirname(file)) > -1 )
+					{				  
+					  console.log(file);
+					  var pathTitle = path.dirname(file);
+					   //fs.symlink(file, PIFOLDERS_ROOT + path.sep + piDee + path.sep + path.basename(targetLocation), 'file', function(err){
+					   fs.link(file, PIFOLDERS_ROOT + path.sep + piDee + path.sep + pathTitle.replace(/\//g, '').replace(' ', '')  + '-' + path.basename(file), function(err){
+						 console.log("Trying ze link: " + PIFOLDERS_ROOT + path.sep + piDee + path.sep + pathTitle.replace(/\//g, '').replace(' ', '')  + '-' + path.basename(file));
+						 if (err) console.error(err);
+						});
+					}
+					else
+					console.log(file);
+			  });
+			// targetLocation = path.normalize(targetLocation + path.sep + "..");
 			 //targetLocation = thisRoot;	
-		  }
+		  
   	    }
 	}); 
    
    //targetLocation is a result of walking down
    console.log("Before Walking back up");
    //walking back up
-	
-//NAME: piDeeFunction
-//PARAMETERS: loc, org, piDee, piip are all parts of parsed JSON (piChunk)
-//PURPOSE: This function works with the database. There are if-else statements
-//         that check to make sure the piDee is set to the XBMC add-on. If there
-//         is no piDee, it creates a new entry in the Pidentities table. If
-//         there is a piDee, it checks to make sure everything in the table
-//         is correct and updates the entries. Then the filepath is made and played.
-
-function piDeeFunction(loc, org, piDee, piip)
-{
-   db.serialize(function(){
-   console.log("5. Entering piDeeFunction");
-   var piFile = '';
-  
-  //Location and Org Code are the default settings on the XBMC addon. They need to be set before anything can be run
-  if(loc == "Location" || org == "Org Code")
-  {
-    console.log("Sending command to reset pi");
-  }
-  else
-  {
-    //checks to see if piDee is the default value from XBMC. This means it needs to 
-	//create a new entry into the Pidentities table and assign a new piDee to the Pi
-	if(piDee == 0)
-	{
-		console.log("Entered the if pjiDee = 0 statement"); 
-		var stmt = db.prepare("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piip + "', '" + loc + "', '" + org + "', Time('now'), 'c:/blahblahblah')", function(error)
 
 }
 
@@ -335,8 +319,6 @@ function piDeeFunction(loc, org, piDee, piip)
 	 console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
    });
   });
-
- 
   
 }
 
@@ -375,14 +357,13 @@ function playPiFilling(piDee, piip)
 		  res.setEncoding('utf-8'); 
 		  var responseString = ''; 
 		  
-		  res.on('data', function(data) {
+		  res.on('data', function(data) 
+		  {
 			 responseString += data;
 		  }); 
 		
 		 console.log('Leaving outgoing request');
 		 
-          	 
-
 		  res.on('end', function() { 
 			 var resultObject = JSON.parse(responseString); 
 		   }); 

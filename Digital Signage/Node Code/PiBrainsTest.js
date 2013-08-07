@@ -1,7 +1,6 @@
 var http = require('http'); 
 var fs = require('fs'); 
-var util=require('util');
-var querystring=require('querystring');
+var sqlite3 = require('sqlite3').verbose(); 
 var mkdirp = require('mkdirp');
 var path = require('path');
 var file = "test10.db";
@@ -21,9 +20,9 @@ var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders"
       console.log("Creating Pidentities Database."); 
       fs.openSync(file, "w"); 
       //create Pidentities table
-	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (PiD ROWID, timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
+	  db.run("CREATE TABLE IF NOT EXISTS Pidentities (timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
     } 
-	
+
 function createNewFolder(piDee, org, loc)
 {
    mkdirp(PIFOLDERS_ROOT + piDee, function (err) {
@@ -76,34 +75,6 @@ function traverseFolders(traverseBy, piDee, target)
    //targetLocation is a result of walking down
    console.log("Before Walking back up");
    //walking back up
-	
-//NAME: piDeeFunction
-//PARAMETERS: loc, org, piDee, piip are all parts of parsed JSON (piChunk)
-//PURPOSE: This function works with the database. There are if-else statements
-//         that check to make sure the piDee is set to the XBMC add-on. If there
-//         is no piDee, it creates a new entry in the Pidentities table. If
-//         there is a piDee, it checks to make sure everything in the table
-//         is correct and updates the entries. Then the filepath is made and played.
-
-function piDeeFunction(loc, org, piDee, piip)
-{
-   db.serialize(function(){
-   console.log("5. Entering piDeeFunction");
-   var piFile = '';
-  
-  //Location and Org Code are the default settings on the XBMC addon. They need to be set before anything can be run
-  if(loc == "Location" || org == "Org Code")
-  {
-    console.log("Sending command to reset pi");
-  }
-  else
-  {
-    //checks to see if piDee is the default value from XBMC. This means it needs to 
-	//create a new entry into the Pidentities table and assign a new piDee to the Pi
-	if(piDee == 0)
-	{
-		console.log("Entered the if pjiDee = 0 statement"); 
-		var stmt = db.prepare("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piip + "', '" + loc + "', '" + org + "', Time('now'), 'c:/blahblahblah')", function(error)
 
 }
 
@@ -246,7 +217,7 @@ function createPidentity(loc, org, piDee, piip)
 				console.log(piDee);
 				sendpiDeeSetting(piip, piDee);
 				createNewFolder(piDee, org, loc); 
-				playPiFilling(piDee, piip);
+				
             });
    
 		//stmt.run();
@@ -335,12 +306,9 @@ function piDeeFunction(loc, org, piDee, piip)
 	 console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
    });
   });
-
- 
-  
 }
 
-function playPiFilling(piDee, piip)
+function playPiFilling(piDee, data, )
 {
 
     var user = { 
@@ -349,20 +317,20 @@ function playPiFilling(piDee, piip)
 		  method: 'Player.Open', 
 		  params: {
 			item: {
-			    directory: SMB_MNT_ROOT + "/" + piDee
+			    directory: SMB_MNT_ROOT + "/" + piChunk.piDee
 			 }
 		  }
 		}; 
 	   
 	 var userString = JSON.stringify(user); 
-       console.log(userString, piip);
+       console.log(userString, piChunk.piip);
 	   var headers = { 
 		  'Content-Type': 'application/json', 
 		  'Content-Length': userString.length 
 	   };
 	 
 	   var options = { 
-		  host: piip, 
+		  host: piChunk.piip, 
 		  port: 80, 
 		  path: '/jsonrpc', 
 		  method: 'POST', 
@@ -375,14 +343,13 @@ function playPiFilling(piDee, piip)
 		  res.setEncoding('utf-8'); 
 		  var responseString = ''; 
 		  
-		  res.on('data', function(data) {
+		  res.on('data', function(data) 
+		  {
 			 responseString += data;
 		  }); 
 		
 		 console.log('Leaving outgoing request');
 		 
-          	 
-
 		  res.on('end', function() { 
 			 var resultObject = JSON.parse(responseString); 
 		   }); 
