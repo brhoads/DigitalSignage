@@ -37,15 +37,10 @@ def watchdog():
             time.sleep(60)
         else:
             print 'NO MEDIA IS PLAYING...REDO PIDENTITIES'
-            #xbmc.Player().play('')
+            play()
             time.sleep(60)
 
-
-#Standard setup of main
-if (__name__ == "__main__"):
-    xbmc.log('Version %s started' % __addonversion__)
-    print "Digital Signage add-on is active"
-    time.sleep(10)
+def play():
     #gather information such as Pi IP Address and settings information from addon
     #piip = socket.gethostbyname(socket.getfqdn())
     piip = xbmc.getIPAddress()
@@ -60,11 +55,20 @@ if (__name__ == "__main__"):
     
     print data
      
-    req = urllib2.Request('http://' + ServerIP + ':8123')
+    req = urllib2.Request('http://' + ServerIP + ':8124')
     req.add_header('Content-Type', 'application/json')
     print simplejson.dumps(pidentity)
     response = urllib2.urlopen(req, simplejson.dumps(pidentity))
     print response
+
+#Standard setup of main
+if (__name__ == "__main__"):
+    xbmc.log('Version %s started' % __addonversion__)
+    print "Digital Signage add-on is active"
+    time.sleep(10)
+
+    play()
+    
     time.sleep(60)
     
     #watchdog()
