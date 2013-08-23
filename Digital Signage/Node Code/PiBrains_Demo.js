@@ -15,6 +15,10 @@ var ORG_ROOT = "/media/piFilling/Org"
 var LOC_ROOT = "/media/piFilling/Location"  
 var PIFOLDERS_ROOT = "/media/piFolders"    //this holds the folders with the symlinks the pi accesses
 var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders" 
+var $ = jQuery = require('jQuery');
+require('../../node_modules/jquery-csv/src/jquery.csv.js');
+var csvFile = 'IPTV_Channels.csv';
+var loadChannels = '';
 
    //create the database if it has not been created 
    if(!exists)
@@ -428,7 +432,33 @@ var HTMLserver=http.createServer(function(req,res)
 	if (req.method=='GET')
 	{
 		console.log('INITIAL STATEMENT');
-		  var checkNames = '';
+		
+		var checkChannels = '<option value="LoadedChannel">' + loadChannels + '</option> \
+								<option value="KORA"> KORA </option>';
+		
+		var checkNames = '';
+		//var loadChannels = '';
+		//var checkChannels = ("#epg").load("IPTV_Channels" + $(this).val() + ".csv");
+		//var loadChannels = '<script> $("#epg").load("IPTV_Channels.csv")</script>';
+		//var loadChannels = 4;
+		
+		var parseCSV = '$.csv.toObjects(csv, {}, function(err, data) \
+			{ \
+				for(var i=0, len=data.length; i<len; i++) \
+				{'
+					+checkChannels+
+				' console.log(data[i]); \
+				} \
+			});'  
+		  
+		fs.readFile(csvFile, 'UTF-8', function(err, csv) 
+		{
+			parseCSV;
+			loadChannels = csv;
+			console.log(loadChannels);
+			
+		});
+		  
 		var stmt = db.prepare("SELECT rowid AS piDee, * FROM Pidentities");
 
 		stmt.each(function(err, row){
@@ -448,7 +478,70 @@ var HTMLserver=http.createServer(function(req,res)
 		stmt.finalize(function(){
 
 			res.end('<html> \
+						<head> \
+						<script src="jquery-1.8.3.min.js"></script> \
+						</head> \
 						<body bgcolor="#E6E6FA"> \
+							<table id="epgTable" border="1" style="display: none;> \
+								<tr id="Channel Names"> \
+									<td id="NTV1"> NASA TV #1 </td> \
+									<td id="NTV2"> NASA TV #2 </td> \
+									<td id="NTV3"> NASA TV #3 </td> \
+									<td id="JTV"> Johnson TV </td> \
+									<td id="QSID"> Quad Split ISS Downlink </td> \
+									<td id="ISSD1"> ISS Downlink 1 </td> \
+									<td id="ISSD2"> ISS Downlink 2 </td> \
+									<td id="ISSD3"> ISS Downlink 3 </td> \
+									<td id="ISSD4"> ISS Downlink 4 </td> \
+									<td id="FCRFL"> FCR - Front Left </td> \
+									<td id="FCRLS"> FCR - Left Side </td> \
+									<td id="FCRBL"> FCR - Back Left </td> \
+									<td id="WFCRFS"> WFCR-Front Side </td> \
+									<td id="WFCRRS"> WFCR-Right Side </td> \
+									<td id="WeatherI"> Weather Info </td> \
+									<td id="WeatherR"> Weather Radar </td> \
+									<td id="CNN"> CNN </td> \
+									<td id="NTVG"> NASA TV Guide </td> \
+									<td id="KUBE"> KUBE </td> \
+									<td id="FOX"> KRIV 26 FOX </td> \
+									<td id="CBS"> KHOU 11 CBS </td> \
+									<td id="NBC"> KRPC 2 NBC </td> \
+									<td id="ABC"> KRTK 13 ABC </td> \
+									<td id="SG"> Scola Germany </td> \
+									<td id="SM"> Satellite Map </td> \
+									<td id="NCH"> NASA Channel </td> \
+									<td id="NEDU"> NASA Educational </td> \
+								</tr> \
+								<tr id="IP Address"> \
+									<td> udp://@239.15.15.1:30120 </td> \
+									<td> udp://@239.15.15.2:30120 </td> \
+									<td> udp://@239.15.15.3:30120 </td> \
+									<td> udp://@239.15.15.4:30120 </td> \
+									<td> udp://@239.15.15.5:30120 </td> \
+									<td> udp://@239.15.15.6:30120 </td> \
+									<td> udp://@239.15.15.7:30120 </td> \
+									<td> udp://@239.15.15.8:30120 </td> \
+									<td> udp://@239.15.15.9:30120 </td> \
+									<td> udp://@239.15.15.10:30120 </td> \
+									<td> udp://@239.15.15.11:30120 </td> \
+									<td> udp://@239.15.15.12:30120 </td> \
+									<td> udp://@239.15.15.13:30120 </td> \
+									<td> udp://@239.15.15.14:30120 </td> \
+									<td> udp://@239.15.15.16:30120 </td> \
+									<td> udp://@239.15.15.17:30120 </td> \
+									<td> udp://@239.15.15.35:30120 </td> \
+									<td> udp://@239.15.15.36:30120 </td> \
+									<td> udp://@239.15.15.38:30120 </td> \
+									<td> udp://@239.15.15.39:30120 </td> \
+									<td> udp://@239.15.15.40:30120 </td> \
+									<td> udp://@239.15.15.41:30120 </td> \
+									<td> udp://@239.15.15.42:30120 </td> \
+									<td> udp://@239.15.15.43:30120 </td> \
+									<td> udp://@239.15.15.45:30120 </td> \
+									<td> udp://@239.15.15.46:30120 </td> \
+									<td> udp://@239.15.15.47:30120 </td> \
+								</tr> \
+							</table> \
 							<form action="/" method="POST" name="form1"> \
 								<b>TOGGLE CONTROL</b> \
 								<input type="radio" name="Control" value="ON">ON \
@@ -460,7 +553,9 @@ var HTMLserver=http.createServer(function(req,res)
 									<option value="ISS1">ISS1</option> \
 									<option value="ISS2">ISS2</option> \
 									<option value="ISS3">ISS3</option> \
-									</select> <br>\
+									<option value="Channels"> + document.getElementByID("Channel Names").textContent; + </option>'
+									+checkChannels+
+									'</select> <br>\
 								<input type="radio" name="Source" value="EMERGENCY FOLDER">EMERGENCY FOLDER <br>\
 								<br> <b>Select the Destination(s) of Notification. </b><br>'
 								+checkNames+ 
@@ -468,8 +563,11 @@ var HTMLserver=http.createServer(function(req,res)
 								<br><br>\
 								<button type="submit" id="btnPost">Post Data</button> \
 							</form> '
-							+selectAll+
-						'</body> \
+							+selectAll+ 
+							'<script> \
+							var table = document.getElementById("epgTable"); \
+							</script> \
+						</body> \
 					</html>');
 		});
 	}
