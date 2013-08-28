@@ -15,6 +15,9 @@ var ORG_ROOT = "/media/piFilling/Org"
 var LOC_ROOT = "/media/piFilling/Location"  
 var PIFOLDERS_ROOT = "/media/piFolders"    //this holds the folders with the symlinks the pi accesses
 var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders" 
+var iptvDatabaseFile = ('./iptvChannels.db')
+var iptvDB = new sqlite3.Database(iptvDatabaseFile);
+
 
    //create the database if it has not been created 
    if(!exists)
@@ -428,12 +431,20 @@ var HTMLserver=http.createServer(function(req,res)
 	if (req.method=='GET')
 	{
 		console.log('INITIAL STATEMENT');
+		var checkChannels = '';
 		  var checkNames = '';
 		var stmt = db.prepare("SELECT rowid AS piDee, * FROM Pidentities");
+		var iptvstmt = iptvDB.prepare("SELECT * FROM iptvTable");
 
 		stmt.each(function(err, row){
 			checkNames += '<input type="checkbox" name="Destination" value="'+row.piDee+'">'+ row.Location + ', '+ row.Orgcode +'<br>'
 		});
+		
+		iptvstmt.each(function(err,row){
+			checkChannels += '<option value = "'+row.ipaddress+'">' + row.channel_name + '</option><br>'
+		});
+		
+		//create a new stmt.each function for checkChannels
 		
 		var selectAll = '<script language="JavaScript"> \
                          function toggle(source) { \
@@ -456,11 +467,7 @@ var HTMLserver=http.createServer(function(req,res)
 								<b>Select the Source of Notification</b> <br> <br> \
 								<input type="radio" name="Source" value="IPTV">IPTV \
 									<select name="Channels"> \
-									<option value="NASATV">NASATV</option> \
-									<option value="ISS1">ISS1</option> \
-									<option value="ISS2">ISS2</option> \
-									<option value="ISS3">ISS3</option> \
-									</select> <br>\
+									<option value="Default">Select a Channel...</option>'
 								<input type="radio" name="Source" value="EMERGENCY FOLDER">EMERGENCY FOLDER <br>\
 								<br> <b>Select the Destination(s) of Notification. </b><br>'
 								+checkNames+ 
