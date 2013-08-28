@@ -26,6 +26,7 @@ Installation:
 	cd VADER
 	Add Python to System Path
 	npm install
-	nodejs PiBrains_demo.js
+	.\node_modules\.bin\winser -i
+	net start digital-signage
 	
 ####Raspberry Pi
