@@ -1,18 +1,18 @@
-h1. Digital Signage
+Digital Signage
+===
+A solution for displaying media in a nested file structure
 
-h2. A solution for displaying media in a nested file structure
+##NodeJS Webserver
+Hosts
 
-*NodeJS Webserver
-**Hosts
+##Raspberry Pi Client
+Pi
 
-*Raspberry Pi Client
-**Pi
+##Getting Started
 
-h2. Getting Started
+##Installation
 
-h3. Installation
-
-###NodeJS Server
+####NodeJS Server
 
 Prerequisites (Windows):
 
@@ -20,11 +20,12 @@ Prerequisites (Windows):
 	*[Python 2.7](http://python.org/download/)
 	*Install [Visual Studio Express](http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express)
 
-Installation
+Installation:
+
 	*git clone https://github.com/brhoads/VADER.git
 	*git checkout -b remotes/origin/DigitalSignage
 	*cd VADER
 	*npm install
 	*nodejs PiBrains_demo.js
 	
-###Raspberry Pi
+####Raspberry Pi
