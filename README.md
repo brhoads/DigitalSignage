@@ -15,9 +15,9 @@ Pi
 ####NodeJS Server
 
 Prerequisites (Windows):
-	[NodeJS](http://nodejs.org/download/) for Windows
-	[Python 2.7](http://python.org/download/)
-	Install [Visual Studio Express](http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express)
+	..* [NodeJS](http://nodejs.org/download/) for Windows
+	..* [Python 2.7](http://python.org/download/)
+	..* Install [Visual Studio Express](http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express)
 
 Installation:
 
