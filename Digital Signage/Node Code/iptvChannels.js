@@ -1,23 +1,22 @@
 var sqlite3 = require('sqlite3').verbose(); 
-var file = "iptvChannels.db";
+var file = "test1.db";
 var iptvDB = new sqlite3.Database(file);
 var fs = require('fs'); 
 var exists = fs.existsSync(file);
 
 
-iptvDB.serialize(function() {
-	if(!exists)
-	{
-		//create iptv  db file
-		console.log("Creating iptvChannels Database."); 
-		fs.openSync(file, "w");
+iptvDB.serialize(function() 
+{
+
+	//create iptv  db file
+	console.log("Creating iptvChannels Database."); 
+	fs.openSync(file, "w");
 		
-		//dropTable first
-		//create iptvtable
-		iptvDB.run("CREATE TABLE iptvTable (channel_name TEXT,ip_address TEXT)");
-	}
-	
-	iptvDB.prepare("SELECT * FROM iptvTable");
+	//drop table first
+	iptvDB.run("DROP TABLE IF EXISTS iptvTable");
+	//create iptvtable
+	iptvDB.run("CREATE TABLE iptvTable (channel_name TEXT,ip_address TEXT)");
+
 	iptvDB.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #1','udp://@239.15.15.1:30120')");
 	iptvDB.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #2','udp://@239.15.15.2:30120')");
 	iptvDB.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #3','udp://@239.15.15.2:30120')");
@@ -45,11 +44,12 @@ iptvDB.serialize(function() {
 	iptvDB.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Satellite Map','udp://@239.15.15.45:30120')");
 	iptvDB.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Channel','udp://@239.15.15.46:30120')");
 	iptvDB.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Educational','udp://@239.15.15.47:30120')");
-
+	
 });
 	
-//iptvDB.each("SELECT * FROM iptvTable", function(err, row) {
-//	console.log(row.channel_name + ", " + row.ip_address);
-//});
+iptvDB.each("SELECT * FROM iptvTable", function(err, row) 
+{
+	console.log(row.channel_name + ", " + row.ip_address);
+});
 
  
