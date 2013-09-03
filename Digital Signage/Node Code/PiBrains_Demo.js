@@ -86,7 +86,7 @@ function traverseFolders(traverseBy, piDee, target)
 						else {
 							filename=pathArray[pathArray.length-1];
 						}
-						fs.symlink(file.replace(/\//g,'\\'), PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename, function(err){
+						fs.link(file.replace(/\//g,'\\'), PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename, function(err){
 							console.log(file.replace(/\//g,'\\'));
 							console.log("Trying ze link: " + PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename);
 							if (err) console.error(err);
@@ -123,6 +123,8 @@ function sendpiDeeSetting(piip, piDee)
 			 params:[piDee.toString()]
 		}
 	}; 
+	
+		//{jsonrpc: '2.0',id: '0',method: 'Addons.ExecuteAddon',params:{wait: true,addonid: "service.digital.signage",params:[piDee.toString()]}} 
 	   
 	var userString = JSON.stringify(user); 
     console.log(userString);
@@ -324,15 +326,7 @@ function piDeeFunction(loc, org, piDee, piip)
      //updating the filelink for specific piDee in the table
     //db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piDee);
    }
-  
-
-  //printing	
-  // db.each("SELECT rowid AS piDee, * FROM Pidentities", function(err, row) 
-   // {
-	 // console.log(row.piDee + ": " + row.Location, row.IP_address, row.Orgcode, row.timestamp, row.filelink);
-   // });
   });
-  
 }
 
 function playPiFilling(piDee, piip)
