@@ -77,8 +77,15 @@ function traverseFolders(traverseBy, piDee, target)
 			var innerFinder = findit.find(thisRoot);
 			innerFinder.on('file', function (file, stat){
 				if(targetLocation.indexOf(path.dirname(file)) > -1 ){				  
-						pathArray = file.split("\\");
-						filename=pathArray[pathArray.length-1].replace(/\//g,'\\');
+						var pathArray = file.replace(/\//g,'\\').split("\\");
+						var length = pathArray.length;
+						//Create a unique filename for each symlink by using the path
+						if(length > 3){
+							filename = pathArray[length-3]+"."+pathArray[length-2]+"."+pathArray[length-1];
+						}
+						else {
+							filename=pathArray[pathArray.length-1];
+						}
 						fs.symlink(file.replace(/\//g,'\\'), PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename, function(err){
 							console.log(file.replace(/\//g,'\\'));
 							console.log("Trying ze link: " + PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename);
