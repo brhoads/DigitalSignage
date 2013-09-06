@@ -15,21 +15,26 @@ var db = new sqlite3.Database(file);
 var exists = fs.existsSync(file);
 var piBool = true;
 
+//Location on machine running Node.js server
 var ORG_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Org";//"media/piFilling/Org"
 var LOC_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Location";  
 var PIFOLDERS_ROOT = "C:\\DigitalSignage\\media\\piFolders";    //this holds the folders with the symlinks the pi accesses
 
-//Mount point for nfs share on the Pi
+//Location where the Pi can access the folders above, either SMB share or NFS
 var NFS_MNT_ROOT = "/media" 
 
-//create the database if it has not been created 
-//if(!exists){
-    //create Pidentities db file
-    console.log("Creating Pidentities Database."); 
-    fs.openSync(file, "a"); 
-    //create Pidentities table
-	db.run("CREATE TABLE IF NOT EXISTS Pidentities (timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT)"); 
-//}  
+console.log("Creating Pidentities Database."); 
+fs.openSync(file, "a"); 
+
+//create Pidentities table
+//	pID  		INTEGER PRIMARY KEY		keeps the rowids unique and persistent through a VACUUM
+//	timestamp	TEXT					timestamp the last time the Pi called in
+//	ipaddress	TEXT					IP address of the Pi
+//	location	TEXT					Room Location of the Pi (set in XBMC)
+//	orgcode		TEXT					Organization the Pi should display images for (set in XBMC)
+//	filelink	TEXT					
+db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, filelink TEXT)"); 
+  
 
 
 function createNewFolder(piDee, org, loc) {
