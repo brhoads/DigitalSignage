@@ -160,7 +160,8 @@ function sendpiDeeSetting(piip, piDee)
 			 responseString += data;
 		  }); 
 
-		  res.on('end', function() { 
+		  res.on('end', function() {
+			 console.log(responseString);
 			 var resultObject = JSON.parse(responseString); 
 		   }); 
 	   }); 
@@ -245,8 +246,9 @@ function createPidentity(loc, org, piDee, piip)
 				console.log("inside");
 				console.log(piDee);
 				sendpiDeeSetting(piip, piDee);
+				console.log('Sent pidee of '+piDee+' too '+piip);
 				createNewFolder(piDee, org, loc); 
-				playPiFilling(piDee, piip);
+				//playPiFilling(piDee, piip);
             });
    
 		//stmt.run();
@@ -286,7 +288,7 @@ function updatePidentity(loc, org, piDee, piip)
 	});
 	stmt.finalize(function()
 	{
-		playPiFilling(piDee, piip);
+		//playPiFilling(piDee, piip);
 	});
 		
 	console.log("11. Outside stmt.get: " + loc, org);	   
@@ -378,7 +380,9 @@ function playPiFilling(piDee, piip)
 		 console.log('Leaving outgoing request');
 		 
 		  res.on('end', function() { 
+			 console.log(responseString);
 			 var resultObject = JSON.parse(responseString); 
+			 responseString = '';
 			 responseString = '';
 		   }); 
 	   }); 
