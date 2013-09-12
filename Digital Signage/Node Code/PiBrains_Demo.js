@@ -1,314 +1,290 @@
-var http = require('http'); 
-var fs = require('fs'); 
+var http = require('http');
+var fs = require('fs');
 var S = require('string');
-var util=require('util');
-var querystring=require('querystring');
-var sqlite3 = require('sqlite3').verbose(); 
+var util = require('util');
+var querystring = require('querystring');
+var sqlite3 = require('sqlite3').verbose();
 var mkdirp = require('mkdirp');
 var path = require('path');
 var findit = require('findit2');
 
-var file = "piDee.db";
+var databaseFile = "C:\\DigitalSignage\\media\\piDee.db";
 var piChunk = '';
 var body = '';
-var db = new sqlite3.Database(file);
-var exists = fs.existsSync(file);
-/*var PIFOLDERS_ROOT = "/media/piFolders";    //this holds the folders with the symlinks the pi accesses */
-var PIFOLDERS_ROOT = "/storage/media";
-//var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders";
-var SMB_MNT_ROOT = "rdp://139.169.8.48/storage/media/";
-var piBool = true;
+var db = new sqlite3.Database(databaseFile);
+var exists = fs.existsSync(databaseFile);
 
 //Location on machine running Node.js server
-var ORG_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Org";//"media/piFilling/Org"
-var LOC_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Location";  
-var PIFOLDERS_ROOT = "C:\\DigitalSignage\\media\\piFolders";    //this holds the folders with the symlinks the pi accesses
+var ORG_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Org";
+var LOC_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Location";
+var NASA_LOGO = "C:\\DigitalSignage\\media\\piFilling\\nasameatball.png";
+//this holds the folders with the symlinks the pi accesses  
+var PIFOLDERS_ROOT = "C:\\DigitalSignage\\media\\piFolders";
 
 //Location where the Pi can access the folders above, either SMB share or NFS
-var NFS_MNT_ROOT = "/media" 
+//	If NFS, the share must be mounted
+var NFS_MNT_ROOT = "/media"
 
-console.log("Creating Pidentities Database."); 
-fs.openSync(file, "a"); 
+//--------------------------------------------------------------------------------------------------
+//Try to open the database file for appending (or creation)
+try {
+    console.log('Opening Pidentities Database.');
+    fs.openSync(databaseFile, 'a');
 
-//create Pidentities table
-//	pID  		INTEGER PRIMARY KEY		keeps the rowids unique and persistent through a VACUUM
-//	timestamp	TEXT					timestamp the last time the Pi called in
-//	ipaddress	TEXT					IP address of the Pi
-//	location	TEXT					Room Location of the Pi (set in XBMC)
-//	orgcode		TEXT					Organization the Pi should display images for (set in XBMC)
-//	filelink	TEXT					
-db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, filelink TEXT)"); 
-  
-
-		
-		//create Pidentities db file
-		console.log("Conditionally Creating Pidentities Database."); 
-		fs.openSync(file, "w");
-		//create Pidentities table
-		db.run("CREATE TABLE IF NOT EXISTS Pidentities (timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT, emergencyActive TEXT)");  
-
-function createNewFolder(piDee, org, loc) {
-    //Create the new folder
-	mkdirp(PIFOLDERS_ROOT + path.sep + piDee, function (err) {
-		err ? console.log(err) : console.log("No errors in creating new folder for "+piDee);
-	fs.symlink("/storage/media/Slide1.JPG", PIFOLDERS_ROOT + path.sep + piDee + path.sep + "Slide1.JPG", 'file', function(err){
-	});
-
-	//Update the DB for pIDs to point to the newly created folder
-	db.run("UPDATE Pidentities SET filelink = '" + PIFOLDERS_ROOT + path.sep + piDee + "' WHERE rowid = " + piDee);
-	
-	//Populate the folder with media
-	populateFolder(org, loc, piDee);	
-	
-	//put in obligatory NASA Meatball
-	fs.symlink("C:\\DigitalSignage\\media\\piFilling\\nasameatball.png", PIFOLDERS_ROOT + path.sep + piDee + path.sep + "nasameatball.png",
-			   'file', function(err){
-					err ? console.error(err) : console.log("No errors in linking NASA logo for "+piDee);
-				}
-	); 
-}	
-
-function traverseFolders(traverseBy, piDee, target)
-{
-	var thisRoot = '';
-	var targetLocation = '';  
-
-	//Determine which path to follow, organization or location
-	if(traverseBy == "org"){
-		thisRoot = ORG_ROOT;
-	}
-	else {
-		thisRoot = LOC_ROOT;
-	}
-	
-	console.log("Traversing by " + thisRoot);
-	
-	var finder = findit.find(thisRoot);
-	finder.on('directory', function(dir, stat){
-		if(path.basename(dir) == target)
-		{
-			targetLocation = dir;
-			console.log("Matched with the : " + dir);
-		
-			console.log("Inside the walk up " + targetLocation);
-			var innerFinder = findit.find(thisRoot);
-			innerFinder.on('file', function (file, stat){
-				if(targetLocation.indexOf(path.dirname(file)) > -1 ){				  
-						var pathArray = file.replace(/\//g,'\\').split("\\");
-						var length = pathArray.length;
-						//Create a unique filename for each symlink by using the path
-						if(length > 3){
-							filename = pathArray[length-3]+"."+pathArray[length-2]+"."+pathArray[length-1];
-						}
-						else {
-							filename=pathArray[pathArray.length-1];
-						}
-						fs.link(file.replace(/\//g,'\\'), PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename, function(err){
-							console.log(file.replace(/\//g,'\\'));
-							console.log("Trying ze link: " + PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename);
-							if (err) console.error(err);
-						});
-				}
-				else{
-					console.log(file);
-				}
-			});
-  		}
-	}); 
+    //create Pidentities table if it doesn't exist
+    //	pID  		INTEGER PRIMARY KEY		keeps the rowids unique and persistent through a VACUUM
+    //	timestamp	TEXT					timestamp the last time the Pi called in
+    //	ipaddress	TEXT					IP address of the Pi
+    //	location	TEXT					Room Location of the Pi (set in XBMC)
+    //	orgcode		TEXT					Organization the Pi should display images for (set in XBMC)
+    //	filelink	TEXT					
+    db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, filelink TEXT)");
+} catch (err) {
+    console.log('Error creating database, potentially a permissions issue');
+    console.log(err);
 }
 
-function populateFolder(org, location, piDee)
-{
-  console.log("\nTraversing the org folders\n");
-  traverseFolders('org', piDee, org)
-  console.log("\nTraversing the location folders\n");
-  traverseFolders('loc', piDee, location)
+/*--------------------------------------------------------------------------------------------------	
+// createPidentity : string, string, string -> integer
+// Sends a notification to the given address with the given message and timeouts
+// INPUT: loc - The location of the Pi
+// INPUT: org - The organization whom owns the Pi
+// INPUT: piip - IP address of the Pi
+// OUTPUT: An integer representing the row id created in the DB, aka the piDee
+// Examples:
+//		createPidentity("30A","DD","192.168.0.1") -> Returns an integer representing the new row id in the database */
+function createPidentity(loc, org, piip) {
+	var id;
+    db.run("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piip + "', '" + loc + "', '" + org + "', Time('now'), 'c:/blahblahblah')", function (error) {
+        id = this.lastID;
+        console.log('New Row ID '+id);		      
+    });
+	return id;
 }
-
-	
-function sendpiDeeSetting(piip, piDee)
-{
-   //xbmc.sendCommand('{"jsonrpc": "2.0", "method": "Addons.ExecuteAddon", "params": { "wait": true, "addonid": "service.digital.signage", "params": ["' + piDee + '"]},  "id": 0}');
-   var user = 
-	{ 
-		  jsonrpc: '2.0', 
-		  id: '0', 
-		  method: 'Addons.ExecuteAddon',  
-		  params: {
-			 wait: true,
-			 addonid: "service.digital.signage",
-			 params:[piDee.toString()]
-		}
-	}; 
-	
-		//{jsonrpc: '2.0',id: '0',method: 'Addons.ExecuteAddon',params:{wait: true,addonid: "service.digital.signage",params:[piDee.toString()]}} 
-	   
-	var userString = JSON.stringify(user); 
-    console.log(userString);
-	var headers = 
-	{ 
-		  'Content-Type': 'application/json', 
-		  'Content-Length': userString.length 
-	};
-	 
-	var options = 
-	{ 
-		  host: piip, 
-		  port: 80, 
-		  path: '/jsonrpc', 
-		  method: 'POST', 
-		  headers: headers 
-	}; 
-   
-   	   var outreq = http.request(options, function(res) { 
-		  console.log('start of outgoing request in pisettings');
-
-		  res.setEncoding('utf-8'); 
-		  var responseString = ''; 
-		  
-		  res.on('data', function(data) 
-		  {
-			 responseString += data;
-		  }); 
-
-		  res.on('end', function() {
-			 console.log(responseString);
-			 var resultObject = JSON.parse(responseString); 
-		   }); 
-	   }); 
-
-	   outreq.on('error', function(e) { 
-		  // TODO: handle error. 
-		});
-
-	   outreq.write(userString); 
-	   outreq.end();
-   
+/*--------------------------------------------------------------------------------------------------
+// createNewFolder : integer 
+// Creates a new folder in the PIFOLDERS_ROOT with the given piDee and updates the database to reflect the change
+// INPUT: piDee - the UUID of the Pi, generated by createPidentity
+// Examples:
+//		createNewFolder(5) -> A folder PIFOLDERS_ROOT\5 should exist and the 5th row filelink will point to that entry */
+function createNewFolder(piDee) {
+	var folder_loc = PIFOLDERS_ROOT + path.sep + piDee;
+    //Create the folder for the Pi symlinks, mkdirp
+    mkdirp(folder_loc, function (err) {
+        err ? console.log(err) : console.log(folder_loc+' was created succesfully');
+    });
+    //Update the DB to show where the pi is looking for media 
+    db.run("UPDATE Pidentities SET filelink = '" + folder_loc + "' WHERE rowid = " + piDee);
 }
-	
-function sendNotification(piip)
-{
-	console.log("made it to the printout");
-	var user = 
-	{ 
-		  jsonrpc: '2.0', 
-		  id: '1', 
-		  method: 'GUI.ShowNotification',  //eventually player.open
-		  params: {
-			 title: 'Error',
-			 message: "Please change your settings and restart your pi",
-			 displaytime: 10000
-		}
-	}; 
-	   
-	var userString = JSON.stringify(user); 
-    console.log(userString);
-	var headers = 
-	{ 
-		  'Content-Type': 'application/json', 
-		  'Content-Length': userString.length 
-	};
-	 
-	var options = 
-	{ 
-		  host: piip, 
-		  port: 80, 
-		  path: '/jsonrpc', 
-		  method: 'POST', 
-		  headers: headers 
-	}; 
-   
-   	   var outreq = http.request(options, function(res) { 
-		  console.log('start of outgoing request');
+//--------------------------------------------------------------------------------------------------
+function traverseFolders(traverseBy, piDee, target) {
+    var thisRoot = '';
+    var targetLocation = '';
 
-		  res.setEncoding('utf-8'); 
-		  var responseString = ''; 
-		  
-		  res.on('data', function(data) 
-		  {
-			 responseString += data;
-		  }); 
+    //Determine which path to follow, organization or location
+    thisRoot = (traverseBy == "org") ? ORG_ROOT : LOC_ROOT;
+    console.log('Traversing by ' + thisRoot);
 
-		  res.on('end', function() { 
-			 var resultObject = JSON.parse(responseString); 
-		   }); 
-	   }); 
-
-	   outreq.on('error', function(e) { 
-		  // TODO: handle error. 
-		});
-
-	   outreq.write(userString); 
-	   outreq.end();
-   
-}
-	
-	
-//NAME: createPidentity
-//PARAMETERS: loc, org, piDee, piip are all parts of parsed JSON (piChunk)
-//PURPOSE: 
-function createPidentity(loc, org, piDee, piip)
-{
-   console.log("Entered the if piDee = -1 statement"); 
-		db.run("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piip + "', '" + loc + "', '" + org + "', Time('now'), 'c:/blahblahblah')", function(error)
-            {
-			    piDee = this.lastID;
-		        //db.run("UPDATE Pidentities SET filelink = 'XXXXXXXXXXXXXXXX' WHERE rowid = "+ piDee);  
-				console.log("inside");
-				console.log(piDee);
-				sendpiDeeSetting(piip, piDee);
-				console.log('Sent pidee of '+piDee+' too '+piip);
-				createNewFolder(piDee, org, loc); 
-				//playPiFilling(piDee, piip);
+    var finder = findit.find(thisRoot);
+    finder.on('directory', function (dir, stat) {
+        if (path.basename(dir) == target) {
+            console.log('Matched with the : ' + dir);
+            var innerFinder = findit.find(thisRoot);
+            innerFinder.on('file', function (file, stat) {
+                if (targetLocation.indexOf(path.dirname(file)) > -1) {
+                    //Parse out any improper path separators **WINDOWS SPECIFIC CODE**
+                    var pathArray = file.replace(/\//g, '\\').split("\\");
+                    var length = pathArray.length;
+                    //Create a unique filename for each symlink by using the path
+                    if (length > 3) {
+                        filename = pathArray[length - 3] + "." + pathArray[length - 2] + "." + pathArray[length - 1];
+                    } else {
+                        filename = pathArray[pathArray.length - 1];
+                    }
+                    fs.link(file.replace(/\//g, '\\'), PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename, function (err) {
+                        console.log("Trying ze link: " + PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename);
+                        if (err) console.error(err);
+                    });
+                } 
             });
-   
-		//stmt.run();
-	  //  stmt.finalize();
-	    //sendpiDeeSetting(piip, piDee);
-        
+		}
+    });
+}
+/*--------------------------------------------------------------------------------------------------	
+// populateFolder : string, string, string
+// Adds a new Pi to the Database, creates it's folder in PIFOLDERS_ROOT, and populates the folders
+// INPUT: loc - The location of the Pi
+// INPUT: org - The organization whom owns the Pi
+// INPUT: piip - IP address of the Pi
+// Examples:
+//		addNewPi("30A","DD","192.168.0.1") -> Adds a Pi to the database, and populates it's folders with the media */
+function populateFolder(org, location, piDee) {
+	//put in NASA Logo
+	fs.symlink(NASA_LOGO, PIFOLDERS_ROOT + path.sep + piDee + path.sep + "nasameatball.png", 'file', function(err){
+	   if (err) console.error('Error in symlinking NASA logo for '+piDee+':'+err)
+	   });
+	
+    console.log("\nTraversing the org folders\n");
+    traverseFolders('org', piDee, org)
+    console.log("Traversing the location folders\n");
+    traverseFolders('loc', piDee, location)
+}
+/*--------------------------------------------------------------------------------------------------	
+// addNewPi : string, string, string -> integer
+// Adds a new Pi to the Database, creates it's folder in PIFOLDERS_ROOT, and populates the folders
+// INPUT: loc - The location of the Pi
+// INPUT: org - The organization whom owns the Pi
+// INPUT: piip - IP address of the Pi
+// OUTPUT: An integer representing the row id created in the DB, aka the piDee
+// Examples:
+//		addNewPi("30A","DD","192.168.0.1") -> Adds a Pi to the database, and populates it's folders with the media */
+function addNewPi(loc, org, piip) {
+    //Add pi to the database and get it's id
+    var piDee = createPidentity(loc, org, piip);
+    //Create new piFolder
+    createNewFolder(piDee);
+    //Populate the folder
+    populateFolder(piDee, loc, org);
+    //Return the new piDee
+	console.log('Pi with ID of '+piDee+' was added');
+    return piDee;
 }
 
-function updatePidentity(loc, org, piDee, piip)
-{
-   
-    var locintab = '';
-    var orgintab = '';
-    //updating the location and orgcode in the table if it does not match the location/org in XBMC
-	
-	var stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = " + piDee); 
-	console.log("7. Before the stmt.get (running it)"); 
-	console.log(stmt);
-	
-	stmt.get(function(err, row)
-	{
-	   console.log("8. row.location, row.Orgcode: "+ row.Location, row.Orgcode);
-	   locintab = row.Location;
-	   orgintab = row.Orgcode;
-	   piipintab = row.IP_address;
-	   console.log("9. inside .run locintab and orgintab: "+ locintab, orgintab);
-		
-		if(loc != locintab || org != orgintab || piip != piipintab)
-		{
-		   db.run("UPDATE Pidentities SET Location = '" +loc+"', Orgcode = '" +org+"', IP_address = '" +piip+ "' WHERE rowid =  "+ piDee);
-		   console.log("9.5 Lovely if statement about location and org");
-		   //db.run("UPDATE Pidentities SET Orgcode = '" +org +"' WHERE rowid = "+ piDee);
-		}  
-	
-	   console.log("10. After get, before finalize");
-			
-	});
-	stmt.finalize(function()
-	{
-		//playPiFilling(piDee, piip);
-	});
-		
-	console.log("11. Outside stmt.get: " + loc, org);	   
+/*--------------------------------------------------------------------------------------------------	
+// sendPiDeeSetting : string, string
+// Sends the id the Pi should write to settings.xml 
+//	It is up to the Pi to properly implement this, overrides.py currently handles it
+// INPUT: piip - IP address of the Pi running XBMC
+// INPUT: piDee - the piDee to reset the Pi to
+// Examples:
+//		sendPiDeeSetting("192.168.0.1","9") -> Sends a piDee of 9 to the Pi at 192.168.0.1 */
+function sendPiDeeSetting(piip, piDee) {
+    var data = {
+        jsonrpc: "2.0",
+        id: "0",
+        method: "Addons.ExecuteAddon",
+        params: {
+            wait: true,
+            addonid: "service.digital.signage",
+            params: ["piDee", piDee.toString()]
+        }
+    };
 
-	// piFile = db.run("SELECT filelink FROM Pidentities WHERE rowid = " +piChunk.piDee);
-	// db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY CAN DO IT!' WHERE rowid = 60");
+	dataString = JSON.stringify(data);
 	
-}	
-	
+    var headers = {
+        "Content-Type": "application/json",
+        "Content-Length": dataString.length
+    };
+
+    var options = {
+        host: piip,
+        port: 80,
+        path: "/jsonrpc",
+        method: "POST",
+        headers: headers
+    };
+
+	//Create the outgoing request object
+    var outreq = http.request(options, function (res) {
+        res.setEncoding('utf-8');
+        var responseString = '';
+
+        res.on('data', function (data) {
+            responseString += data;
+        });
+
+        res.on('end', function () {
+            var resultObject = JSON.parse(responseString);
+        });
+    });
+
+    outreq.on('error', function (e) {
+        // TODO: handle error. 
+    });
+
+	//Write the request
+    outreq.write(dataString);
+    outreq.end();
+}
+//--------------------------------------------------------------------------------------------------
+function updateDatabase(loc, org, piDee, piip) {
+    //updating the location and orgcode in the table if it does not match the location/org in XBMC
+    var stmt = db.prepare("SELECT Location, Orgcode FROM Pidentities WHERE rowid = " + piDee);
+
+    stmt.get(function (err, row) {
+        if (loc != row.location || org != row.orgcode || piip != row.ipaddress) {
+			console.log('Updating information for '+piDee+' to '+loc+' '+org+' '+piip);
+            db.run("UPDATE Pidentities SET Location = '" + loc + "', Orgcode = '" + org + "', IP_address = '" + piip + "' WHERE rowid =  " + piDee);
+        }
+    });
+    stmt.finalize(function () {
+        //playPiFilling(piDee, piip);
+    });
+}
+/*--------------------------------------------------------------------------------------------------	
+// sendNotification : string, string, integer -> boolean
+// Sends a notification to the given address with the given message and timeouts
+// INPUT: piip - IP address of the Pi running XBMC
+// INPUT: message - [OPTIONAL] message to be displayed in the notification
+// INPUT: timeout - [OPTIONAL] duration of notification on screen
+// OUTPUT: returns true on succesful JSONRPC call, returns false on error
+// Examples:
+//		sendNotification("192.168.0.1") -> Sends default notification to IP with default timeout
+//		sendNotification("192.168.0.1","Testing") -> Sends "Testing" as the notification to Pi at IP 192.168.0.1
+//		sendNotification("192.168.0.1","Testing",500) -> Sends "Testing" as the notification with a timeout of .5 second */
+function sendNotification(piip, message, duration) {
+    var defaultMessage = "Please change your settings and restart your pi";
+	var defaultDuration = 10000;
+	var user = {
+        jsonrpc: '2.0',
+        id: '1',
+        method: 'GUI.ShowNotification',
+        params: {
+            title: 'Error',
+            message: message || defaultMessage,
+            displaytime: duration || defaultDuration
+        }
+    };
+
+    var userString = JSON.stringify(user);
+    console.log(userString);
+    var headers = {
+        'Content-Type': 'application/json',
+        'Content-Length': userString.length
+    };
+
+    var options = {
+        host: piip,
+        port: 80,
+        path: '/jsonrpc',
+        method: 'POST',
+        headers: headers
+    };
+
+    var outreq = http.request(options, function (res) {
+        console.log('start of outgoing request');
+
+        res.setEncoding('utf-8');
+        var responseString = '';
+
+        res.on('data', function (data) {
+            responseString += data;
+        });
+
+        res.on('end', function () {
+            var resultObject = JSON.parse(responseString);
+        });
+    });
+
+    outreq.on('error', function (e) {
+        // TODO: handle error. 
+    });
+
+    outreq.write(userString);
+    outreq.end();
+}
+//--------------------------------------------------------------------------------------------------
 //NAME: piDeeFunction
 //PARAMETERS: loc, org, piDee, piip are all parts of parsed JSON (piChunk)
 //PURPOSE: This function works with the database. There are if-else statements
@@ -316,191 +292,127 @@ function updatePidentity(loc, org, piDee, piip)
 //         is no piDee, it creates a new entry in the Pidentities table. If
 //         there is a piDee, it checks to make sure everything in the table
 //         is correct and updates the entries. Then the filepath is made and played.
-function piDeeFunction(loc, org, piDee, piip)
-{
-   db.serialize(function(){
-   console.log("5. Entering piDeeFunction");
-   var piFile = '';
-   var piDeez = piDee;
-  //Location and Org Code are the default settings on the XBMC addon. They need to be set before anything can be run
-  if(loc == "Location" || org == "Org Code")
-    {
-       setTimeout(sendNotification(piip), 5000);
-    }
-  else
-    {
-      //checks to see if piDee is the default value from XBMC. This means it needs to 
-  	  //create a new entry into the Pidentities table and assign a new piDee to the Pi
-  	  if(piDee == -1)
-	   {
-		createPidentity(loc, org, piDeez, piip);
-       }
-	   
-	  else
-	   {
-		console.log("6. Entering the else"); 
-	    updatePidentity(loc, org, piDeez, piip);
-	   }
-	console.log("12. Random spot after the outside stmt.get but before table"); 
-     //updating the filelink for specific piDee in the table
-    //db.run("UPDATE Pidentities SET filelink = 'JAMES AND HAYLEY ARE CHIP AND DALE' WHERE rowid = "+ piDee);
-   }
-  });
+function piDeeFunction(loc, org, piDee, piip) {
+	console.log("5. Entering piDeeFunction");
+	var piFile = '';
+	//Location and Org Code are the default settings on the XBMC addon. They need to be set before anything can be run
+	if (loc == "Location" || org == "Org Code") {
+		setTimeout(sendNotification(piip), 5000);
+	} else {
+		//checks to see if piDee is the default value from XBMC. This means it needs to 
+		//create a new entry into the Pidentities table and assign a new piDee to the Pi
+		if (piDee == -1) {
+			createPidentity(loc, org, piDee, piip);
+		} else {
+			updatePidentity(loc, org, piDee, piip);
+		}
+	}
+	});
 }
 
-function playPiFilling(piDee, piip)
-{
+//--------------------------------------------------------------------------------------------------
 
-    var user = { 
-		  jsonrpc: '2.0', 
-		  id: '1', 
-		  method: 'Player.Open', 
-		  params: {
-			item: {
-			    directory: NFS_MNT_ROOT + "/piFolders/" + piDee
-			 }
-		  }
-		}; 
-	   
-	 var userString = JSON.stringify(user); 
-       console.log(userString, piip);
-	   var headers = { 
-		  'Content-Type': 'application/json', 
-		  'Content-Length': userString.length 
-	   };
-	 
-	   var options = { 
-		  host: piip, 
-		  port: 80, 
-		  path: '/jsonrpc', 
-		  method: 'POST', 
-		  headers: headers 
-	   }; 
-	   
-	    var outreq = http.request(options, function(res) { 
-		  console.log('start of outgoing request');
+function playPiFilling(piDee, piip) {
 
-		  res.setEncoding('utf-8'); 
-		  var responseString = ''; 
-		  
-		  res.on('data', function(data) 
-		  {
-			 responseString += data;
-		  }); 
-		
-		 console.log('Leaving outgoing request');
-		 
-		  res.on('end', function() { 
-			 console.log(responseString);
-			 var resultObject = JSON.parse(responseString); 
-			 responseString = '';
-			 responseString = '';
-		   }); 
-	   }); 
+    var user = {
+        jsonrpc: '2.0',
+        id: '1',
+        method: 'Player.Open',
+        params: {
+            item: {
+                directory: NFS_MNT_ROOT + "/piFolders/" + piDee
+            }
+        }
+    };
 
-	   outreq.on('error', function(e) { 
-		  // TODO: handle error. 
-		});
+    var userString = JSON.stringify(user);
+    console.log(userString, piip);
+    var headers = {
+        'Content-Type': 'application/json',
+        'Content-Length': userString.length
+    };
 
-	  outreq.write(userString); 
-	  outreq.end();
+    var options = {
+        host: piip,
+        port: 80,
+        path: '/jsonrpc',
+        method: 'POST',
+        headers: headers
+    };
+
+    var outreq = http.request(options, function (res) {
+        console.log('start of outgoing request');
+
+        res.setEncoding('utf-8');
+        var responseString = '';
+
+        res.on('data', function (data) {
+            responseString += data;
+        });
+
+        console.log('Leaving outgoing request');
+
+        res.on('end', function () {
+            var resultObject = JSON.parse(responseString);
+            responseString = '';
+        });
+    });
+
+    outreq.on('error', function (e) {
+        // TODO: handle error. 
+    });
+
+    outreq.write(userString);
+    outreq.end();
 }
 
-function controlCheck()
-{
-	if (alertChunk.Control == "ON")
-	{
-		console.log("CONTROL HAS BEEN ACTIVATED");
-		//Check which Pi's have been selected. For each selected, check boolean emergencyActive from Pidentities table. 
-		//If one is true, do nothing. If false, boolean = true and playEmergency() from selected source.
-		
-		playEmergency(row.IP_address);
-		
-	}
-	else
-	{
-		console.log("CONTROL HAS NOT BEEN ACTIVATED");
-		//Take no action on submission
-		//Give message saying nothing has been changed.
-		console.log("Nothing will be changed");
-	}
-}
+//--------------------------------------------------------------------------------------------------
+http.createServer(function (inreq, res) {
+
+    console.log('Created server listening on port 8124');
+    inreq.on('data', function (data) {
+        body += data;
+    });
 
 
-//This function isn't really necessary...
-function sourceCheck()
-{
-	if (alertChunk.Source == "EMERGENCY FOLDER")
-	{
-		console.log("Play emergency from the emergency folder")
-		playEmergency(row.IP_address);
-	}
-	else
-	{
-		console.log('Play emergency from IPTV channel ' +alertChunk.Channels);
-	}
-}
+    inreq.on('end', function () {
+        res.writeHead(200, {
+            'Content-Type': 'application/json'
+        });
+        res.end('{OK}\n');
+
+        console.log("3. Parsing JSON");
+        console.log("3.5" + body);
+        piChunk = JSON.parse(body);
+        console.log(piChunk);
+        console.log("4. Calling piDeeFunction");
+        piDeeFunction(piChunk.location, piChunk.org, piChunk.piDee, piChunk.piip);
 
 
-http.createServer(function (inreq, res)
-{
-    
-   console.log("1. SERVER SERVER");
-   inreq.on('data', function (data)
-   {
-      body += data;
-   });
+        body = '';
+    });
+
+    console.log('2. This is the end');
 
 
-   inreq.on('end', function()
-   {
-	 res.writeHead(200, {'Content-Type': 'application/json'});
-	 res.end('{OK}\n');
-	
-	 console.log("3. Parsing JSON"); 
-	 console.log("3.5" + body);
-     piChunk = JSON.parse(body);
-	 console.log(piChunk);
-	 console.log("4. Calling piDeeFunction");
-     piDeeFunction(piChunk.location, piChunk.org, piChunk.piDee, piChunk.piip);
-
-	  
-	   body='';	
-   });
-
-	console.log('2. This is the end');
-    
-	
 }).listen(8124);
 
 
-
-
+//--------------------------------------------------------------------------------------------------
 //EMERGENCY ALERT
-var HTMLserver=http.createServer(function(req,res)
-{
-	console.log('collectDATA for Emergency Service');
-	
-	if (req.method=='GET')
-	{
-		console.log('INITIAL STATEMENT');
-		
-		var checkChannels = '';
-		var checkNames = '';
-		  
-		var stmt = db.prepare("SELECT rowid AS piDee, * FROM Pidentities");
-		var iptvstmt = db.prepare("SELECT * FROM iptvTable");
+var HTMLserver = http.createServer(function (req, res) {
+    console.log('collectDATA for Emergency Service');
 
-		stmt.each(function(err, row){
-			checkNames += '<input type="checkbox" name="Destination" value="'+row.piDee+'">'+ row.Location + ', '+ row.Orgcode +'<br>'
-		});
-		
-		iptvstmt.each(function(err,row)
-		{
-			checkChannels += '<option value = "'+row.ip_address+'">' +row.channel_name+ '</option><br>'
-		});
-		
-		var selectAll = '<script language="JavaScript"> \
+    if (req.method == 'GET') {
+        console.log('INITIAL STATEMENT');
+        var checkNames = '';
+        var stmt = db.prepare("SELECT rowid AS piDee, * FROM Pidentities");
+
+        stmt.each(function (err, row) {
+            checkNames += '<input type="checkbox" name="Destination" value="' + row.piDee + '">' + row.Location + ', ' + row.Orgcode + '<br>'
+        });
+
+        var selectAll = '<script language="JavaScript"> \
                          function toggle(source) { \
 							  checkboxes = document.getElementsByName("Destination");\
 							  for(var i=0, n=checkboxes.length;i<n;i++) {\
@@ -508,16 +420,16 @@ var HTMLserver=http.createServer(function(req,res)
 							   }\
 					      }\
 						</script>';
-		
-		
-		stmt.finalize(function(){
 
-			res.end('<html> \
+
+        stmt.finalize(function () {
+
+            res.end('<html> \
 						<body bgcolor="#E6E6FA"> \
 							<form action="/" method="POST" name="form1"> \
 								<b>TOGGLE CONTROL</b> \
 								<input type="radio" name="Control" value="ON">ON \
-								<input type="radio" name="Control" value="OFF" checked>OFF <br> <br>\
+								<input type="radio" name="Control" value="OFF">OFF <br> <br>\
 								<b>Select the Source of Notification</b> <br> <br> \
 								<input type="radio" name="Source" value="IPTV">IPTV \
 									<select name="Channels"> \
@@ -527,122 +439,101 @@ var HTMLserver=http.createServer(function(req,res)
 									<option value="ISS3">ISS3</option> \
 									</select> <br>\
 								<input type="radio" name="Source" value="EMERGENCY FOLDER">EMERGENCY FOLDER <br>\
-								<br> <b>Select the Destination(s) of Notification. </b><br>'
-								+checkNames+ 
-								'<input type="checkbox" onClick="toggle(this)" name="SelectAll" value="Select All"> Select All\
+								<br> <b>Select the Destination(s) of Notification. </b><br>' + checkNames +
+                '<input type="checkbox" onClick="toggle(this)" name="SelectAll" value="Select All"> Select All\
 								<br><br>\
-								<button type="submit" id="btnPost">Post Data</button> '
-							+selectAll+
-							'</form> \
-						</body> \
+								<button type="submit" id="btnPost">Post Data</button> \
+							</form> ' + selectAll +
+                '</body> \
 					</html>');
-		});
-	}
-	else
-	{
-		var alert = '';
-			
-		req.on('data', function (data)
-		{
-			alert += data;
-	
-		});
-	
-		req.on('end', function () 
-		{
+        });
+    } else {
+        var alert = '';
 
-			console.log(alert + "<-Posted Data Test");
-			res.end(util.inspect(querystring.parse(alert)));
-			alertChunk = querystring.parse(alert);
-			console.log(alertChunk.Destination);
-			
-			//Print out to confrim output.
-			console.log(alertChunk.Control);
-			console.log(alertChunk.Source);
-			console.log(alertChunk.Channels);
-			
-			//sourceCheck();
-			
-			//This section commented out only because i am not connected to any pi's
-			var piipSelect = "SELECT IP_Address FROM Pidentities WHERE ";
-			alertChunk.Destination.forEach(function(currentIterationOfLoop)
-			{
-				piipSelect += "rowid = " + currentIterationOfLoop + " OR ";
-			});
-			console.log(piipSelect);
-			piipSelect = S(piipSelect).chompRight(" OR ").s;
-			console.log(piipSelect);
-			var stmt2= db.prepare(piipSelect);
-		
-			stmt2.each(function(err, row){
-			    console.log(row.IP_address);
-				playEmergency(row.IP_address);
-				sourceCheck() //this line added
-			});
-			
-			
-		});
-	}
+        req.on('data', function (data) {
+            alert += data;
 
-	
-}).listen(8080); 
+        });
+
+        req.on('end', function () {
+
+            console.log(alert + "<-Posted Data Test");
+            res.end(util.inspect(querystring.parse(alert)));
+            alertChunk = querystring.parse(alert);
+            console.log(alertChunk.Destination);
+
+            var piipSelect = "SELECT IP_Address FROM Pidentities WHERE ";
+            alertChunk.Destination.forEach(function (currentIterationOfLoop) {
+                piipSelect += "rowid = " + currentIterationOfLoop + " OR ";
+            });
+            console.log(piipSelect);
+            piipSelect = S(piipSelect).chompRight(" OR ").s;
+            console.log(piipSelect);
+            var stmt2 = db.prepare(piipSelect);
+
+            stmt2.each(function (err, row) {
+                console.log(row.IP_address);
+                playEmergency(row.IP_address);
+            });
+
+        });
+    }
 
 
-function playEmergency(piip)
-{
-	console.log("PLAY EMERGENCY FUNCTION CALL");
-    var user = { 
-		  jsonrpc: '2.0', 
-		  id: '1', 
-		  method: 'Player.Open', 
-		  params: {
-			item: {
-			    directory: NFS_MNT_ROOT + "/Emergency"
-				//directory: SMB_MNT_ROOT
-			 }
-		  }
-		}; 
-	   
-	 var userString = JSON.stringify(user); 
-       console.log(userString, piip);
-	   var headers = { 
-		  'Content-Type': 'application/json', 
-		  'Content-Length': userString.length 
-	   };
-	 
-	   var options = { 
-		  host: piip, 
-		  port: 80, 
-		  path: '/jsonrpc', 
-		  method: 'POST', 
-		  headers: headers 
-	   }; 
-	   
-	    var outreq = http.request(options, function(res) { 
-		  console.log('start of outgoing request');
+}).listen(8080);
 
-		  res.setEncoding('utf-8'); 
-		  var responseString = ''; 
-		  
-		  res.on('data', function(data) 
-		  {
-			 responseString += data;
-		  }); 
-		
-		 console.log('Leaving outgoing request');
-		 
-		  res.on('end', function() { 
-			 var resultObject = JSON.parse(responseString); 
-			 responseString = '';
-		   }); 
-	   }); 
+//--------------------------------------------------------------------------------------------------
 
-	   outreq.on('error', function(e) { 
-		  // TODO: handle error. 
-		});
+function playEmergency(piip) {
 
-	  outreq.write(userString); 
-	  outreq.end();
+    var user = {
+        jsonrpc: '2.0',
+        id: '1',
+        method: 'Player.Open',
+        params: {
+            item: {
+                directory: NFS_MNT_ROOT + "/Emergency"
+            }
+        }
+    };
+
+    var userString = JSON.stringify(user);
+    console.log(userString, piip);
+    var headers = {
+        'Content-Type': 'application/json',
+        'Content-Length': userString.length
+    };
+
+    var options = {
+        host: piip,
+        port: 80,
+        path: '/jsonrpc',
+        method: 'POST',
+        headers: headers
+    };
+
+    var outreq = http.request(options, function (res) {
+        console.log('start of outgoing request');
+
+        res.setEncoding('utf-8');
+        var responseString = '';
+
+        res.on('data', function (data) {
+            responseString += data;
+        });
+
+        console.log('Leaving outgoing request');
+
+        res.on('end', function () {
+            var resultObject = JSON.parse(responseString);
+            responseString = '';
+        });
+    });
+
+    outreq.on('error', function (e) {
+        // TODO: handle error. 
+    });
+
+    outreq.write(userString);
+    outreq.end();
 }
-
-//
