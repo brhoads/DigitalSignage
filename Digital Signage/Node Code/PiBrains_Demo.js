@@ -13,6 +13,10 @@ var piChunk = '';
 var body = '';
 var db = new sqlite3.Database(file);
 var exists = fs.existsSync(file);
+/*var PIFOLDERS_ROOT = "/media/piFolders";    //this holds the folders with the symlinks the pi accesses */
+var PIFOLDERS_ROOT = "/storage/media";
+//var SMB_MNT_ROOT = "smb://10.128.1.137/piFolders";
+var SMB_MNT_ROOT = "rdp://139.169.8.48/storage/media/";
 var piBool = true;
 
 //Location on machine running Node.js server
@@ -36,11 +40,18 @@ fs.openSync(file, "a");
 db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, filelink TEXT)"); 
   
 
+		
+		//create Pidentities db file
+		console.log("Conditionally Creating Pidentities Database."); 
+		fs.openSync(file, "w");
+		//create Pidentities table
+		db.run("CREATE TABLE IF NOT EXISTS Pidentities (timestamp TEXT, IP_address TEXT, Location TEXT, Orgcode TEXT, filelink TEXT, emergencyActive TEXT)");  
 
 function createNewFolder(piDee, org, loc) {
     //Create the new folder
 	mkdirp(PIFOLDERS_ROOT + path.sep + piDee, function (err) {
 		err ? console.log(err) : console.log("No errors in creating new folder for "+piDee);
+	fs.symlink("/storage/media/Slide1.JPG", PIFOLDERS_ROOT + path.sep + piDee + path.sep + "Slide1.JPG", 'file', function(err){
 	});
 
 	//Update the DB for pIDs to point to the newly created folder
@@ -402,12 +413,16 @@ function controlCheck()
 		console.log("CONTROL HAS BEEN ACTIVATED");
 		//Check which Pi's have been selected. For each selected, check boolean emergencyActive from Pidentities table. 
 		//If one is true, do nothing. If false, boolean = true and playEmergency() from selected source.
+		
+		playEmergency(row.IP_address);
+		
 	}
 	else
 	{
 		console.log("CONTROL HAS NOT BEEN ACTIVATED");
 		//Take no action on submission
 		//Give message saying nothing has been changed.
+		console.log("Nothing will be changed");
 	}
 }
 
@@ -418,6 +433,7 @@ function sourceCheck()
 	if (alertChunk.Source == "EMERGENCY FOLDER")
 	{
 		console.log("Play emergency from the emergency folder")
+		playEmergency(row.IP_address);
 	}
 	else
 	{
@@ -545,11 +561,10 @@ var HTMLserver=http.createServer(function(req,res)
 			console.log(alertChunk.Source);
 			console.log(alertChunk.Channels);
 			
-			controlCheck();
-			sourceCheck();
+			//sourceCheck();
 			
 			//This section commented out only because i am not connected to any pi's
-			/* var piipSelect = "SELECT IP_Address FROM Pidentities WHERE ";
+			var piipSelect = "SELECT IP_Address FROM Pidentities WHERE ";
 			alertChunk.Destination.forEach(function(currentIterationOfLoop)
 			{
 				piipSelect += "rowid = " + currentIterationOfLoop + " OR ";
@@ -562,8 +577,10 @@ var HTMLserver=http.createServer(function(req,res)
 			stmt2.each(function(err, row){
 			    console.log(row.IP_address);
 				playEmergency(row.IP_address);
-			}); */
-
+				sourceCheck() //this line added
+			});
+			
+			
 		});
 	}
 
@@ -573,7 +590,7 @@ var HTMLserver=http.createServer(function(req,res)
 
 function playEmergency(piip)
 {
-  
+	console.log("PLAY EMERGENCY FUNCTION CALL");
     var user = { 
 		  jsonrpc: '2.0', 
 		  id: '1', 
@@ -581,6 +598,7 @@ function playEmergency(piip)
 		  params: {
 			item: {
 			    directory: NFS_MNT_ROOT + "/Emergency"
+				//directory: SMB_MNT_ROOT
 			 }
 		  }
 		}; 
@@ -626,3 +644,5 @@ function playEmergency(piip)
 	  outreq.write(userString); 
 	  outreq.end();
 }
+
+//
