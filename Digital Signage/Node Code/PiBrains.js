@@ -9,7 +9,7 @@ var sqlite3 = require('sqlite3').verbose();
 var mkdirp = require('mkdirp');
 var path = require('path');
 var findit = require('findit2');
-var chokidar = require('chokidar');
+//var chokidar = require('chokidar');
 
 //--------------------------------------------------------------------------------------------------
 // Constants
@@ -44,6 +44,58 @@ try {
     db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, filelink TEXT)");
 } catch (err) {
     console.log('Error creating database, potentially a permissions issue');
+    console.log(err);
+}
+
+try {
+    db.serialize(function() {
+		console.log('Opening Database Once Again.');
+		fs.openSync(DATABASE, 'a');
+		//create iptvTable
+		console.log("Creating iptvChannels.");
+		
+		//drop table first
+		db.run("DROP TABLE IF EXISTS iptvTable");
+		console.log("Table dropped");
+		db.run("CREATE TABLE iptvTable (channel_name TEXT,ip_address TEXT)");
+		
+		//fill iptvTable...make into function later...
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #1','udp://@239.15.15.1:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #2','udp://@239.15.15.2:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #3','udp://@239.15.15.2:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Johnson TV','udp://@239.15.15.4:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Quad Split ISS Downlink','udp://@239.15.15.5:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 1','udp://@239.15.15.6:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 2','udp://@239.15.15.7:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 3','udp://@239.15.15.8:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 4','udp://@239.15.15.9:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Front Left','udp://@239.15.15.10:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Left Side','udp://@239.15.15.11:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Back Left','udp://@239.15.15.12:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Front Side','udp://@239.15.15.13:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Right Side','udp://@239.15.15.14:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Info','udp://@239.15.15.16:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Radar','udp://@239.15.15.17:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('CNN','udp://@239.15.15.35:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV Guide','udp://@239.15.15.36:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KUBE','udp://@239.15.15.38:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRIV 26 FOX','udp://@239.15.15.39:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KHOU 11 CBS','udp://@239.15.15.40:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRPC 2 NBC','udp://@239.15.15.41:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KTRK 13 ABC','udp://@239.15.15.42:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Scola Germany','udp://@239.15.15.43:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Satellite Map','udp://@239.15.15.45:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Channel','udp://@239.15.15.46:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Educational','udp://@239.15.15.47:30120')");
+		
+		db.each("SELECT * FROM iptvTable", function(err, row) {
+		console.log(row.channel_name + ", " + row.ip_address);
+		});
+		console.log("Table Created");
+	});
+
+} catch (err) {
+    console.log('Error updating database, potentially a permissions issue');
     console.log(err);
 }
 
@@ -363,16 +415,16 @@ http.createServer(function (inreq, res) {
 
 	//Append all incoming data to 'body' which is flushed on inreq.end
     inreq.on('data', function (data) {
-        body += data;
+		body += data;
     });
 	//When the Pi is doing sending it's pidentity, send back any changes or OK
     inreq.on('end', function () {
-        var piChunk = '';
+		var piChunk = '';
 		var piDee = '';
 		console.log('Server received Pi');
 		piChunk = JSON.parse(body);
 		body = ''; //Clear the HTML Request contents for incoming requests !!Not sure if this is necessary
-        console.log(piChunk);
+		console.log(piChunk);
 		
 		//If the sent in piDee is the default -1, it needs a new piDee
 		if(piChunk.piDee == -1){
@@ -390,3 +442,118 @@ http.createServer(function (inreq, res) {
         
     });
 }).listen(8124);
+
+
+
+//Create server for webpage
+var HTMLserver=http.createServer(function(req,res){
+	console.log('Created server listening on port 8080');
+	
+	if (req.method=='GET')
+	{
+		var displayChannels = '';
+		var checkNames = '';
+
+
+		var stmt = db.prepare("SELECT rowid AS piDee, * FROM Pidentities");
+		var iptvstmt = db.prepare("SELECT * FROM iptvTable");
+
+		//Creates a checkbox for each piDee
+		stmt.each(function(err, row){
+			checkNames += '<input type="checkbox" name="Destination" value="'+row.piDee+'">'+ row.Location + ', '+ row.Orgcode +'<br>'
+		});
+
+		//Displays the channel name/ip_address
+		iptvstmt.each(function(err,row){
+			displayChannels += '<option value = "'+row.ip_address+'">' +row.channel_name+ '</option><br>'
+		});
+
+
+
+		//Creates a "Select All" option
+		var selectAll = '<script language="JavaScript"> \
+						function toggle(source) { \
+							checkboxes = document.getElementsByName("Destination");\
+							for(var i=0, n=checkboxes.length;i<n;i++) {\
+							checkboxes[i].checked = source.checked;\
+							}\
+						}\
+						</script>';
+
+
+
+		//Display the data on webpage in an HTML form
+		stmt.finalize(function() {
+			res.end('<html> \
+						<head> \
+						</head> \
+						<body bgcolor="#E6E6FA"> \
+							<form action="/" method="POST" name="form1"> \
+								<b>TOGGLE CONTROL</b> \
+								<input type="radio" name="Control" value="ON">ON \
+								<input type="radio" name="Control" value="OFF" checked>OFF <br> <br>\
+								<b>Select the Source of Notification</b> <br> <br> \
+								<input type="radio" name="Source" value="IPTV">IPTV \
+									<select name="Channels"> \
+									<option value="Default">Select a Channel...</option>'
+									+displayChannels+
+									'</select> <br>\
+								<input type="radio" name="Source" value="EMERGENCY FOLDER">EMERGENCY FOLDER <br>\
+								<br> <b>Select the Destination(s) of Notification. </b><br>'
+								+checkNames+ 
+								'<input type="checkbox" onClick="toggle(this)" name="SelectAll" value="Select All"> Select All\
+								<br><br>\
+								<button type="submit" id="btnPost">Post Data</button> '
+								+selectAll+ 
+							'</form> \
+						</body> \
+					</html>');
+		});
+	}
+	else {
+		var alert = '';
+		
+		//Append all incoming data to 'alert'
+		req.on('data', function (data){
+		alert += data;
+		});
+
+
+		req.on('end', function () 
+		{
+			console.log(alert + "<-Posted Data");
+			res.end(util.inspect(querystring.parse(alert)));
+			alertChunk = querystring.parse(alert);
+			console.log(alertChunk.Destination);
+
+
+			//Print out to confirm output.
+			console.log(alertChunk.Control);
+			console.log(alertChunk.Source);
+			console.log(alertChunk.Channels);
+
+			var piipSelect = "SELECT IP_Address FROM Pidentities WHERE ";
+			alertChunk.Destination.forEach(function(currentIterationOfLoop)
+			{
+				piipSelect += "rowid = " + currentIterationOfLoop + " OR ";
+			});
+			console.log(piipSelect);
+			piipSelect = S(piipSelect).chompRight(" OR ").s;
+			console.log(piipSelect);
+			
+			
+			
+			var stmt2= db.prepare(piipSelect);
+			stmt2.each(function(err, row)
+			{
+				console.log(row.IP_address);
+				playEmergency(row.IP_address);
+				sourceCheck() //this line added
+			});
+
+
+
+
+		});
+	}
+}).listen(8080);
