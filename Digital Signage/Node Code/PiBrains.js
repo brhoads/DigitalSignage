@@ -9,11 +9,13 @@ var sqlite3 = require('sqlite3').verbose();
 var mkdirp = require('mkdirp');
 var path = require('path');
 var findit = require('findit2');
+var chokidar = require('chokidar');
 
 //--------------------------------------------------------------------------------------------------
 // Constants
 var DATABASE = "C:\\DigitalSignage\\media\\piDee.db";
 //Location on machine running Node.js server
+var MEDIA_ROOT = "C:\\DigitalSignage\\media\\piFilling";
 var ORG_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Org";
 var LOC_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Location";
 var NASA_LOGO = "C:\\DigitalSignage\\media\\piFilling\\nasameatball.png";
@@ -45,6 +47,19 @@ try {
     console.log(err);
 }
 
+/*-------------------------------------------------------------------------------------------------
+// Chokidar Filesystem Watching
+chokidar = require('chokidar');
+watcher = chokidar.watch(MEDIA_ROOT);
+watcher.on('add',updateFolders);
+
+function updateFolders(path){
+	console.log(path);
+	db.each("SELECT location, orgcode FROM Pidentities", function(err,row){
+		console.log(row.pID+' '+row.location + ' ' + row.orgcode);
+	});
+}
+*/
 /*--------------------------------------------------------------------------------------------------	
 // addNewPi : string, string, string -> integer
 // Sends a notification to the given address with the given message and timeouts
@@ -97,6 +112,17 @@ function createNewFolder(piDee, loc, org, piip) {
 // Examples:
 //		populateFolder("7","30A","DD","192.168.0.1") -> Populates the given Pi's folders with the media */
 function populateFolder(piDee,location, org, piip) {
+	//Remove all previous entries in the folder
+	var files;
+	fs.readdir(PIFOLDERS_ROOT+path.sep+piDee,function(err,hits){files=hits;});
+	if(files){
+		files.forEach(function(entry){
+			fs.unlink(PIFOLDERS_ROOT+path.sep+piDee+path.sep+entry, function(err){
+				console.log(err);
+			});
+		});
+	}
+	
 	//put in NASA Logo
 	fs.symlink(NASA_LOGO, PIFOLDERS_ROOT + path.sep + piDee + path.sep + "nasameatball.png", 'file', function(err){
 	   if (err) console.error('Error in symlinking NASA logo for '+piDee+':'+err)
@@ -106,8 +132,24 @@ function populateFolder(piDee,location, org, piip) {
     traverseFolders('org', piDee, org);
     traverseFolders('loc', piDee, location);
 	
-	sendPiDee(piip, piDee); 
-	playPi(piip, piDee);
+	sendPiDee(piip, piDee, playPi); 
+	//playPi(piip, piDee);
+}
+function populateFolders(piDee, location, org){
+	//Remove all previous entries in the folder
+	var files;
+	fs.readdir(PIFOLDERS_ROOT+path.sep+piDee,function(err,hits){files=hits;});
+	if(files){
+		files.forEach(function(entry){
+			fs.unlink(PIFOLDERS_ROOT+path.sep+piDee+path.sep+entry, function(err){
+				console.log(err);
+			});
+		});
+	}
+	
+	//Symlink the hierarchial media
+    traverseFolders('org', piDee, org);
+    traverseFolders('loc', piDee, location);
 }
 function traverseFolders(traverseBy, piDee, target) {
     var thisRoot = '';
@@ -141,7 +183,7 @@ function traverseFolders(traverseBy, piDee, target) {
     });
 }
 
-function playPi(piip, piDee){
+function playPi(piip){
 	var data = {
         jsonrpc: "2.0",
         id: "0",
@@ -198,7 +240,7 @@ function playPi(piip, piDee){
 // INPUT: piDee - the piDee to reset the Pi to
 // Examples:
 //		sendPiDeeSetting("192.168.0.1","9") -> Sends a piDee of 9 to the Pi at 192.168.0.1 */
-function sendPiDee(piip, piDee) {
+function sendPiDee(piip, piDee, callback) {
     var data = {
         jsonrpc: "2.0",
         id: "0",
@@ -246,6 +288,10 @@ function sendPiDee(piip, piDee) {
 	//Write the request
     outreq.write(dataString);
     outreq.end();
+	
+	if(callback){
+		callback(piip);
+	}
 }
 /*--------------------------------------------------------------------------------------------------	
 // sendNotification : string, string, integer -> boolean
@@ -331,13 +377,16 @@ http.createServer(function (inreq, res) {
 		//If the sent in piDee is the default -1, it needs a new piDee
 		if(piChunk.piDee == -1){
 			piDee = addNewPi(piChunk.location, piChunk.org, piChunk.piip); 
+			console.log('Wrote new piDee of '+piDee+' to Pi"');
 		}
-		
+		else{
+			playPi(piChunk.piip);
+		}
 		res.writeHead(200, {
             'Content-Type': 'application/json'
         });
         res.end();
 
-        console.log('Wrote new piDee of '+piDee+' to Pi"');
+        
     });
 }).listen(8124);
