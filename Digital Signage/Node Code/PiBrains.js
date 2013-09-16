@@ -8,12 +8,12 @@ var querystring = require('querystring');
 var sqlite3 = require('sqlite3').verbose();
 var mkdirp = require('mkdirp');
 var path = require('path');
-var findit = require('findit2');
-//var chokidar = require('chokidar');
+var findit2 = require('findit2');
+var hound = require('hound');
 
 //--------------------------------------------------------------------------------------------------
 // Constants
-var DATABASE = "C:\\DigitalSignage\\media\\piDee.db";
+var DATABASE = "C:\\DigitalSignage\\media\\digitalSignage.db";
 //Location on machine running Node.js server
 var MEDIA_ROOT = "C:\\DigitalSignage\\media\\piFilling";
 var ORG_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Org";
@@ -28,7 +28,6 @@ var NFS_MNT_ROOT = "/media"
 //--------------------------------------------------------------------------------------------------
 // Database Initialization
 var db = new sqlite3.Database(DATABASE);
-var exists = fs.existsSync(DATABASE);
 //Try to open the database file for appending (or creation)
 try {
     console.log('Opening Pidentities Database.');
@@ -40,78 +39,26 @@ try {
     //	ipaddress	TEXT					IP address of the Pi
     //	location	TEXT					Room Location of the Pi (set in XBMC)
     //	orgcode		TEXT					Organization the Pi should display images for (set in XBMC)
-    //	filelink	TEXT					
-    db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, filelink TEXT)");
+    //	pifolder	TEXT					The path the Pi is looking at for media
+	//	mediapath 	TEXT					List of all the paths the Pi has media from
+    db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, pifolder TEXT, mediapath TEXT)");
 } catch (err) {
     console.log('Error creating database, potentially a permissions issue');
     console.log(err);
 }
 
-try {
-    db.serialize(function() {
-		console.log('Opening Database Once Again.');
-		fs.openSync(DATABASE, 'a');
-		//create iptvTable
-		console.log("Creating iptvChannels.");
-		
-		//drop table first
-		db.run("DROP TABLE IF EXISTS iptvTable");
-		console.log("Table dropped");
-		db.run("CREATE TABLE iptvTable (channel_name TEXT,ip_address TEXT)");
-		
-		//fill iptvTable...make into function later...
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #1','udp://@239.15.15.1:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #2','udp://@239.15.15.2:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #3','udp://@239.15.15.2:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Johnson TV','udp://@239.15.15.4:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Quad Split ISS Downlink','udp://@239.15.15.5:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 1','udp://@239.15.15.6:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 2','udp://@239.15.15.7:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 3','udp://@239.15.15.8:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 4','udp://@239.15.15.9:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Front Left','udp://@239.15.15.10:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Left Side','udp://@239.15.15.11:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Back Left','udp://@239.15.15.12:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Front Side','udp://@239.15.15.13:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Right Side','udp://@239.15.15.14:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Info','udp://@239.15.15.16:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Radar','udp://@239.15.15.17:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('CNN','udp://@239.15.15.35:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV Guide','udp://@239.15.15.36:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KUBE','udp://@239.15.15.38:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRIV 26 FOX','udp://@239.15.15.39:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KHOU 11 CBS','udp://@239.15.15.40:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRPC 2 NBC','udp://@239.15.15.41:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KTRK 13 ABC','udp://@239.15.15.42:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Scola Germany','udp://@239.15.15.43:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Satellite Map','udp://@239.15.15.45:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Channel','udp://@239.15.15.46:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Educational','udp://@239.15.15.47:30120')");
-		
-		db.each("SELECT * FROM iptvTable", function(err, row) {
-		console.log(row.channel_name + ", " + row.ip_address);
-		});
-		console.log("Table Created");
-	});
+//-------------------------------------------------------------------------------------------------
+// Hound Filesystem Watching
+watcher = hound.watch(MEDIA_ROOT);
+watcher.on('create',updateFolders);
 
-} catch (err) {
-    console.log('Error updating database, potentially a permissions issue');
-    console.log(err);
-}
-
-/*-------------------------------------------------------------------------------------------------
-// Chokidar Filesystem Watching
-chokidar = require('chokidar');
-watcher = chokidar.watch(MEDIA_ROOT);
-watcher.on('add',updateFolders);
-
-function updateFolders(path){
-	console.log(path);
-	db.each("SELECT location, orgcode FROM Pidentities", function(err,row){
-		console.log(row.pID+' '+row.location + ' ' + row.orgcode);
+function updateFolders(file){
+	console.log("File Created:" +file);
+	db.each("SELECT pID, location, orgcode FROM Pidentities", function(err,row){
+		populateFolders(row.pID, row.location, row.orgcode);
 	});
 }
-*/
+
 /*--------------------------------------------------------------------------------------------------	
 // addNewPi : string, string, string -> integer
 // Sends a notification to the given address with the given message and timeouts
@@ -122,7 +69,8 @@ function updateFolders(path){
 // Examples:
 //		createPidentity("30A","DD","192.168.0.1") -> Returns an integer representing the new row id in the database */
 function addNewPi(loc, org, piip) {
-	db.run("INSERT INTO Pidentities (IP_address, Location, Orgcode, timestamp, filelink) VALUES ('" + piip + "', '" + loc + "', '" + org + "', Time('now'), 'c:/blahblahblah')", function (error) {
+	db.run("INSERT INTO Pidentities (ipaddress, location, orgcode, timestamp, pifolder, mediapath) VALUES ('" + piip + "', '" + loc + "', '" + org + "', Time('now'), 'c:/pifolder', 'c:/mediapath')", function (error) {
+		if(error) console.log("Error inserting new Pi: " +error);
 		id = this.lastID;
 		console.log('New Row ID '+id);
 		createNewFolder(id, loc, org, piip);
@@ -137,7 +85,7 @@ function addNewPi(loc, org, piip) {
 // INPUT: piip - IP address of the Pi
 // CALLS: populateFolder
 // Examples:
-//		createNewFolder(5, "30A", "DD", "192.168.0.1") -> A folder PIFOLDERS_ROOT\5 should exist and the 5th row filelink will point to that entry */
+//		createNewFolder(5, "30A", "DD", "192.168.0.1") -> A folder PIFOLDERS_ROOT\5 should exist and the 5th row pifolder will point to that entry */
 function createNewFolder(piDee, loc, org, piip) {
 	var folder_loc = PIFOLDERS_ROOT + path.sep + piDee;
     //Create the folder for the Pi symlinks, mkdirp
@@ -151,7 +99,7 @@ function createNewFolder(piDee, loc, org, piip) {
 		}
     });
     //Update the DB to show where the pi is looking for media 
-    db.run("UPDATE Pidentities SET filelink = '" + folder_loc + "' WHERE rowid = " + piDee);
+    db.run("UPDATE Pidentities SET pifolder = '" + folder_loc + "' WHERE rowid = " + piDee);
 }
 /*--------------------------------------------------------------------------------------------------	
 // populateFolder : string, string, string
@@ -160,79 +108,93 @@ function createNewFolder(piDee, loc, org, piip) {
 // INPUT: loc - The location of the Pi
 // INPUT: org - The organization whom owns the Pi
 // INPUT: piip - IP address of the Pi
-// CALLS: sendPiDee
+// CALLS: traverseFolders
 // Examples:
 //		populateFolder("7","30A","DD","192.168.0.1") -> Populates the given Pi's folders with the media */
 function populateFolder(piDee,location, org, piip) {
 	//Remove all previous entries in the folder
-	var files;
-	fs.readdir(PIFOLDERS_ROOT+path.sep+piDee,function(err,hits){files=hits;});
-	if(files){
-		files.forEach(function(entry){
-			fs.unlink(PIFOLDERS_ROOT+path.sep+piDee+path.sep+entry, function(err){
-				console.log(err);
+	fs.readdir(PIFOLDERS_ROOT+path.sep+piDee,function(err,hits){
+		if(hits){
+			hits.forEach(function(entry){
+				fs.unlink(PIFOLDERS_ROOT+path.sep+piDee+path.sep+entry, function(err){
+					if(err) console.log("Error unlinking "+entry+": "+err);
+				});
 			});
-		});
-	}
-	
-	//put in NASA Logo
-	fs.symlink(NASA_LOGO, PIFOLDERS_ROOT + path.sep + piDee + path.sep + "nasameatball.png", 'file', function(err){
-	   if (err) console.error('Error in symlinking NASA logo for '+piDee+':'+err)
-	   });
-
-	//Symlink the hierarchial media
-    traverseFolders('org', piDee, org);
-    traverseFolders('loc', piDee, location);
-	
-	sendPiDee(piip, piDee, playPi); 
-	//playPi(piip, piDee);
+		}
+		//Symlink the hierarchial media
+		traverseFolders(piDee,location,org, piip);
+	});	
 }
 function populateFolders(piDee, location, org){
 	//Remove all previous entries in the folder
-	var files;
-	fs.readdir(PIFOLDERS_ROOT+path.sep+piDee,function(err,hits){files=hits;});
-	if(files){
-		files.forEach(function(entry){
-			fs.unlink(PIFOLDERS_ROOT+path.sep+piDee+path.sep+entry, function(err){
-				console.log(err);
+	fs.readdir(PIFOLDERS_ROOT+path.sep+piDee,function(err,hits){
+		if(hits){
+			hits.forEach(function(entry){
+				fs.unlink(PIFOLDERS_ROOT+path.sep+piDee+path.sep+entry, function(err){
+					if(err) console.log("Error unlinking "+entry+": "+err);
+				});
 			});
-		});
-	}
-	
-	//Symlink the hierarchial media
-    traverseFolders('org', piDee, org);
-    traverseFolders('loc', piDee, location);
-}
-function traverseFolders(traverseBy, piDee, target) {
-    var thisRoot = '';
-    thisRoot = (traverseBy == "org") ? ORG_ROOT : LOC_ROOT;
+		}
+		//Symlink the hierarchial media
+		traverseFolders(piDee,location,org);
 
-    console.log("Traversing by " + thisRoot);
-    var finder = require('findit2').find(thisRoot);
+	});
+}
+/*--------------------------------------------------------------------------------------------------	
+// traverseFolders : string, string, string, string
+// Adds a new Pi to the Database, creates it's folder in PIFOLDERS_ROOT, and populates the folders
+// INPUT: pidee - the UUID of the Pi, generated by createPidentity
+// INPUT: loc - The location of the Pi
+// INPUT: org - The organization whom owns the Pi
+// INPUT: piip - [OPTIONAL] IP address of the Pi
+// CALLS: sendPiDee
+// Examples:
+//		traverseFolder("7","30A","DD") -> Symlinks all files from all dirs about 30A and DD into PIFOLDERS_ROOT/7 */
+function traverseFolders(piDee, location, org, piip) {
+    var thisRoot = MEDIA_ROOT;
+    var finder = findit2.find(thisRoot);	
+	var foundPath = '';
+	var piPath = '';
+	
+	//Find path to org and loc folders
     finder.on('directory', function (dir, stat) {
-        if (path.basename(dir) == target) {
-            console.log("Matched with the : " + dir);
-            var innerFinder = require('findit2').find(thisRoot);
-            innerFinder.on('file', function (file, stat) {
-                if (dir.indexOf(path.dirname(file)) > -1) {
-                    //console.log(file);
-                    //Parse out any improper path separators **WINDOWS SPECIFIC CODE**
-                    var pathArray = file.replace(/\//g, '\\').split("\\");
-                    var length = pathArray.length;
-                    //Create a unique filename for each symlink by using the path
-                    if (length > 3) {
-                        filename = pathArray[length - 3] + "." + pathArray[length - 2] + "." + pathArray[length - 1];
-                    } else {
-                        filename = pathArray[pathArray.length - 1];
-                    }
-                    fs.symlink(file.replace(/\//g, '\\'), PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename, function (err) {
+		//If the directory matches org or location, scan for the files
+        if ((path.basename(dir) == org) || (path.basename(dir)==location)) {
+            console.log("Matched with " + dir);					
+			finder.on('file',function(file,stat){
+				//Determine if the file's path resides in the dir path
+				if (dir.indexOf(path.dirname(file)) > -1) {
+					//If a file has been found in the directory, don't append it to the master list of 
+					//	found directories. If it hasn't been found, append it.
+					if(path.dirname(file.replace(/\//g, '\\'))!=foundPath){
+						if(foundPath){piPath = piPath + foundPath + ';';}
+						foundPath = path.dirname(file.replace(/\//g, '\\'));						
+					}
+					//Parse out any improper path separators **WINDOWS SPECIFIC CODE**
+					var pathArray = file.replace(/\//g, '\\').split("\\");
+					var length = pathArray.length;
+					//Create a unique filename for each symlink by using the path
+					if (length > 3) {
+						filename = pathArray[length - 3] + "." + pathArray[length - 2] + "." + pathArray[length - 1];
+					} else {
+						filename = pathArray[pathArray.length - 1];
+					}
+					fs.symlink(file.replace(/\//g, '\\'), PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename, function (err) {
                         console.log("Trying ze link: " + PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename);
                         if (err) console.error(err);
                     });
-				}
-            });
-        }
-    });
+				}	
+			});		
+		}
+	});
+	finder.on('end',function(){
+		db.run("UPDATE Pidentities SET mediapath = '" + piPath + "' WHERE rowid = " + piDee);
+		
+		//Use the user callback in sendPiDee to playPi
+		if(piip){
+			sendPiDee(piip, piDee, playPi); 
+		}
+	});
 }
 
 function playPi(piip){
@@ -330,6 +292,10 @@ function sendPiDee(piip, piDee, callback) {
 
         res.on('end', function () {
             var resultObject = JSON.parse(responseString);
+			console.log(resultObject);
+			if(callback){
+				callback(piip);
+			}
         });
     });
 
@@ -340,10 +306,6 @@ function sendPiDee(piip, piDee, callback) {
 	//Write the request
     outreq.write(dataString);
     outreq.end();
-	
-	if(callback){
-		callback(piip);
-	}
 }
 /*--------------------------------------------------------------------------------------------------	
 // sendNotification : string, string, integer -> boolean
