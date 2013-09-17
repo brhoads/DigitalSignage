@@ -424,16 +424,19 @@ function sendNotification(piip, message, duration) {
 
 
 /*--------------------------------------------------------------------------------------------------	
-// emergencyOverride : 
+// emergencyOverride : string
 // Checks if Control has been enabled or not. Calls callEmergency() with the source option selected from post data. 
-//Check whether Control is enabled or not. Then check the play source selected. */
+// Check whether Control is enabled or not. Then check the play source selected.
+// INPUT: emergencyDestination - The piipSelect value. aka IP address.
+// Example:
+//		emergencyOverride(piipSelect) */
 
-function emergencyOverride()
+function emergencyOverride(emergencyDestination)
 {
 	if (alertChunk.Control == "ON") {
 		console.log("CONTROL HAS BEEN ACTIVATED");
 		console.log("CHECKING PLAY SOURCE");
-		callEmergency(alertChunk.Source);
+		callEmergency(alertChunk.Source, emergencyDestination);
 	}
 	else {
 		console.log("CONTROL HAS NOT BEEN ACTIVATED");
@@ -444,30 +447,32 @@ function emergencyOverride()
 
 
 /*--------------------------------------------------------------------------------------------------	
-// callEmergency : string
+// callEmergency : string, string
 // Checks the source of emergency content given from selected postData and then calls playEmergencyFolder() 
-// INPUT: emergencyCall - Source of Emergency content
+// INPUT: emergencyCall - Source of Emergency content(Emergency Folder or IPTV)
+// INPUT: emergencyDestination -IP address passed from emergencyOverride.
 // Examples:
-//		callEmergency(alertChunk.Source) -> calls playEmergency*/
-function callEmergency(var emergencyCall) {
+//		callEmergency(alertChunk.Source, emergencyDestination) */
+function callEmergency(emergencyCall, emergencyDestination) {
     if (emergencyCall == "EMERGENCY FOLDER") {
-		playEmergencyFolder(alertChunk.Destination);
-	else if (emergencyCall == "IPTV")
-		playEmergencyIPTV(alertChunk.Destination);
-	else
+		playEmergencyFolder(emergencyDestination);
+	}
+	else if (emergencyCall == "IPTV") {
+		playEmergencyIPTV(emergencyDestination);
+	}
+	else {
 		console.log("Can't play from Emergency file source");
 	}
 }
 
 /*--------------------------------------------------------------------------------------------------	
-// playEmergencyFolder : string,
+// playEmergencyFolder : string
 // Passes the data as a json object to overrides.py which then handles the ExecuteAddon functionality to playEmergency
-// INPUT: emergencyDestination - Which Pi's need to play
+// INPUT: emergencyDestination - IPaddress of Pi's needing to be played
 // Examples:
-// playEmergencyFolder(alertChunk.Destination ) -> calls playEmergency*/
+// 		playEmergencyFolder(emergencyDestination) -> calls playEmergency*/
 
-//Need to get the IPaddress of Pi here...
-function playEmergencyFolder()
+function playEmergencyFolder(emergencyDestination)
 	var data = {
         jsonrpc: "2.0",
         id: "0",
@@ -519,12 +524,12 @@ function playEmergencyFolder()
 }
 
 /*--------------------------------------------------------------------------------------------------	
-// playEmergencyIPTV : string,
-// Passes the data as a json object to overrides.py which then handles the ExecuteAddon functionality to playIPTV
-// INPUT: emergencyDestination - Which Pi's need to play
+// playEmergencyFolder : string
+// Passes the data as a json object to overrides.py which then handles the ExecuteAddon functionality to playEmergency
+// INPUT: emergencyDestination - IPaddress of Pi's needing to be played
 // Examples:
-// playEmergencyFolder(alertChunk.Destination ) -> calls playIPTV*/
-function playEmergencyIPTV(var emergencyDestination)
+// 		playEmergencyIPTV(emergencyDestination) -> calls playIPTV*/
+function playEmergencyIPTV(emergencyDestination)
 	var data = {
         jsonrpc: "2.0",
         id: "0",
