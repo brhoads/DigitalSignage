@@ -54,10 +54,77 @@ try {
 watcher = hound.watch(MEDIA_ROOT);
 watcher.on('create',updateFolders);
 function updateFolders(file){
-	console.log("File Created:" +file);
-	db.each("SELECT pID, location, orgcode FROM Pidentities", function(err,row){
-		populateFolders(row.pID, row.location, row.orgcode);
+	console.log('File Created:' +file);
+	console.log('Path: '+ path.dirname(file.replace(/\//g, '\\')));
+	//Search the db for all Pi's that rely on the path of the updated file
+	db.each("SELECT pID, ipaddress, location, orgcode FROM Pidentities WHERE mediapath LIKE '%"+path.dirname(file.replace(/\//g, '\\'))+"%'", function(err,row){
+		console.log(row);
+		//Create "unique" filename
+		//Parse out any improper path separators **WINDOWS SPECIFIC CODE**
+		var pathArray = file.replace(/\//g, '\\').split("\\");
+		var length = pathArray.length;
+		var piFolder = PIFOLDERS_ROOT + path.sep + row.pID + path.sep;
+		//Create a unique filename for each symlink by using the path
+		if (length > 3) {
+			filename = pathArray[length - 3] + "." + pathArray[length - 2] + "." + pathArray[length - 1];
+		} else {
+			filename = pathArray[pathArray.length - 1];
+		}
+		//Add the file to the given piFolder for persistence
+		fs.symlink(file.replace(/\//g, '\\'), piFolder + filename, function (err) {
+                        console.log("Trying ze link: " + piFolder + filename);
+                        if (err) console.error(err.code);
+                    });
+		
+		//populateFolders(row.pID, row.location, row.orgcode);
+		
+		//Inject into the Pi's Playlist for immediacy
+		addToPlaylist(row.ipaddress, NFS_MNT_ROOT+'/piFolders/'+row.pID+'/'+filename);
 	});
+}
+
+function addToPlaylist(piip, file){
+	console.log(file);
+	var data = {
+		"jsonrpc": "2.0",id: "1",
+        method: "Playlist.Add",
+        params: {
+            playlistid: 2,
+			item:{"file":file}
+        }
+    };
+
+	dataString = JSON.stringify(data);
+	console.log('Add to Playlist JSON: '+dataString);
+    var options = {
+        host: piip,port: 80,path: "/jsonrpc",method: "POST",
+        headers: {
+			"Content-Type": "application/json",
+			"Content-Length": dataString.length
+		}
+    };
+
+	//Create the outgoing request object
+    var outreq = http.request(options, function (res) {
+        res.setEncoding('utf-8');
+        var responseString = '';
+
+        res.on('data', function (data) {
+            responseString += data;
+        });
+
+        res.on('end', function () {
+            console.log(JSON.parse(responseString));
+        });
+    });
+
+    outreq.on('error', function (e) {
+        // TODO: handle error. 
+    });
+
+	//Write the request
+    outreq.write(dataString);
+    outreq.end();
 }
 
 
@@ -201,7 +268,7 @@ function populateFolders(piDee, location, org){
 // INPUT: loc - The location of the Pi
 // INPUT: org - The organization whom owns the Pi
 // INPUT: piip - [OPTIONAL] IP address of the Pi
-// CALLS: sendPiDee
+// CALLS: sendPiDee with playPi callback
 // Examples:
 //		traverseFolder("7","30A","DD") -> Symlinks all files from all dirs about 30A and DD into PIFOLDERS_ROOT/7 */
 function traverseFolders(piDee, location, org, piip) {
@@ -235,17 +302,19 @@ function traverseFolders(piDee, location, org, piip) {
 					}
 					fs.symlink(file.replace(/\//g, '\\'), PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename, function (err) {
                         console.log("Trying ze link: " + PIFOLDERS_ROOT + path.sep + piDee + path.sep + filename);
-                        if (err) console.error(err);
+                        if (err) console.error(err.code);
                     });
 				}	
 			});		
 		}
 	});
+	
 	finder.on('end',function(){
-		db.run("UPDATE Pidentities SET mediapath = '" + piPath + "' WHERE rowid = " + piDee);
-		
-		//Use the user callback in sendPiDee to playPi
+		//piip is only present in the initial "add new pi" sequence. The DB does not need updating
+		//	when traverseFolders is called from the file system watchdog.
 		if(piip){
+			db.run("UPDATE Pidentities SET mediapath = '" + piPath + "' WHERE rowid = " + piDee);
+			//Use the user callback in sendPiDee to playPi
 			sendPiDee(piip, piDee, playPi); 
 		}
 	});
@@ -424,25 +493,25 @@ function sendNotification(piip, message, duration) {
     outreq.end();
 }
 
+//--------------------------------------------------------------------------------------------------
+function updateDatabase(piDee, loc, org, piip) {
+    //updating the location and orgcode in the table if it does not match the location/org in XBMC
+    var stmt = db.prepare("SELECT location, orgcode FROM Pidentities WHERE rowid = " + piDee);
+	var update = false;
+	
+    stmt.get(function (err, row) {
+        if (loc != row.location || org != row.orgcode || piip != row.ipaddress) {
+			console.log('Updating information for '+piDee+' to '+loc+' '+org+' '+piip);
+            update = true;
+			db.run("UPDATE Pidentities SET location = '" + loc + "', orgcode = '" + org + "', ipaddress = '" + piip + "' WHERE rowid =  " + piDee);
+        }
+    });
+    stmt.finalize(function () {
+        //We need to repopulate all the folders and begin playing if the info changed
+		if(update){populateFolder(piDee,loc, org, piip);}		
+    });
+}
 
-/*--------------------------------------------------------------------------------------------------	
-// emergencyOverride : string
-// Checks if Control has been enabled or not. Calls callEmergency() with the source option selected from post data. 
-// Check whether Control is enabled or not. Then check the play source selected.
-// INPUT: emergencyDestination - The piipSelect value. aka IP address.
-// Example:
-//		emergencyOverride(piipSelect) */
-
-function emergencyOverride(emergencyDestination)
-{
-	if (alertChunk.Control == "ON") {
-		console.log("CONTROL HAS BEEN ACTIVATED");
-		console.log("CHECKING PLAY SOURCE");
-		callEmergency(alertChunk.Source, emergencyDestination);
-	}
-	else {
-		console.log("CONTROL HAS NOT BEEN ACTIVATED");
-		console.log("Nothing will be changed");
 	}
 }
 
@@ -604,9 +673,9 @@ http.createServer(function (inreq, res) {
 		if(piChunk.piDee == -1){
 			piDee = addNewPi(piChunk.location, piChunk.org, piChunk.piip); 
 			console.log('Wrote new piDee of '+piDee+' to Pi"');
-		}
-		else{
-			playPi(piChunk.piip);
+		} else{
+			//If the Pi is already in the database, we potentially need to update it's settings
+			updateDatabase(piChunk.piDee,piChunk.location, piChunk.org, piChunk.piip);			
 		}
 		res.writeHead(200, {
             'Content-Type': 'application/json'
