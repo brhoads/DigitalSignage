@@ -24,8 +24,8 @@ var NASA_LOGO = "C:\\DigitalSignage\\media\\piFilling\\nasameatball.png";
 var PIFOLDERS_ROOT = "C:\\DigitalSignage\\media\\piFolders";
 //Location where the Pi can access the folders above, either SMB share or NFS
 //	If NFS, the share must be mounted
-//var NFS_MNT_ROOT = "/media"
-var NFS_MNT_ROOT = "C:\\"
+var NFS_MNT_ROOT = "/media"
+//var NFS_MNT_ROOT = "C:\\"
 
 //--------------------------------------------------------------------------------------------------
 // Database Initialization
