@@ -1,4 +1,4 @@
- re
+import re
 import os
 import sys
 import time
@@ -50,8 +50,6 @@ def dumpSettings():
 	xbmc.log("Sending back contents of settings file")
 def playEmergency(args):
 	xbmc.log("Emergency playing")
-	xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFilling/EmergencyOverride)')
-	xbmc.executebuiltin("Action(Play)")
 def playIPTV(args):
 	xbmc.log("IPTV playing")
 
@@ -70,7 +68,7 @@ if (__name__ == "__main__"):
 		dumpSettings()
 	elif(sys.argv[1] == "emergency"):
 		playEmergency(sys.argv[1:])
-    elif(sys.argv[1] == "iptv"):
+    	elif(sys.argv[1] == "iptv"):
 		playIPTV(sys.argv[1:])
     	else:
 		xbmc.log("Unknown overrides command "+sys.argv[1])
