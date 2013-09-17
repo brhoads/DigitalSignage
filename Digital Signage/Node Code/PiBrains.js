@@ -18,12 +18,14 @@ var DATABASE = "C:\\DigitalSignage\\media\\digitalSignage.db";
 var MEDIA_ROOT = "C:\\DigitalSignage\\media\\piFilling";
 var ORG_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Org";
 var LOC_ROOT = "C:\\DigitalSignage\\media\\piFilling\\Location";
+var EMERG_ROOT = "C:\\DigitalSignage\\media\\piFilling\\EmergencyOverride";
 var NASA_LOGO = "C:\\DigitalSignage\\media\\piFilling\\nasameatball.png";
 //this holds the folders with the symlinks the pi accesses  
 var PIFOLDERS_ROOT = "C:\\DigitalSignage\\media\\piFolders";
 //Location where the Pi can access the folders above, either SMB share or NFS
 //	If NFS, the share must be mounted
-var NFS_MNT_ROOT = "/media"
+//var NFS_MNT_ROOT = "/media"
+var NFS_MNT_ROOT = "C:\\"
 
 //--------------------------------------------------------------------------------------------------
 // Database Initialization
@@ -472,7 +474,7 @@ function callEmergency(emergencyCall, emergencyDestination) {
 // Examples:
 // 		playEmergencyFolder(emergencyDestination) -> calls playEmergency*/
 
-function playEmergencyFolder(emergencyDestination)
+function playEmergencyFolder(emergencyDestination) {
 	var data = {
         jsonrpc: "2.0",
         id: "0",
@@ -520,7 +522,6 @@ function playEmergencyFolder(emergencyDestination)
 	//Write the request
     outreq.write(dataString);
     outreq.end();
-	}
 }
 
 /*--------------------------------------------------------------------------------------------------	
@@ -529,7 +530,7 @@ function playEmergencyFolder(emergencyDestination)
 // INPUT: emergencyDestination - IPaddress of Pi's needing to be played
 // Examples:
 // 		playEmergencyIPTV(emergencyDestination) -> calls playIPTV*/
-function playEmergencyIPTV(emergencyDestination)
+function playEmergencyIPTV(emergencyDestination) {
 	var data = {
         jsonrpc: "2.0",
         id: "0",
@@ -577,7 +578,6 @@ function playEmergencyIPTV(emergencyDestination)
 	//Write the request
     outreq.write(dataString);
     outreq.end();
-	}
 }
 
 

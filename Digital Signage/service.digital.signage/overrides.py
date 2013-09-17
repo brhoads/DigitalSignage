@@ -50,6 +50,8 @@ def dumpSettings():
 	xbmc.log("Sending back contents of settings file")
 def playEmergency(args):
 	xbmc.log("Emergency playing")
+	xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFilling/EmergencyOverride)')
+	xbmc.executebuiltin("Action(Play)")
 def playIPTV(args):
 	xbmc.log("IPTV playing")
 
