@@ -51,12 +51,64 @@ try {
 // Hound Filesystem Watching
 watcher = hound.watch(MEDIA_ROOT);
 watcher.on('create',updateFolders);
-
 function updateFolders(file){
 	console.log("File Created:" +file);
 	db.each("SELECT pID, location, orgcode FROM Pidentities", function(err,row){
 		populateFolders(row.pID, row.location, row.orgcode);
 	});
+}
+
+
+
+try {
+    db.serialize(function() {
+		console.log('Opening Database Once Again.');
+		fs.openSync(DATABASE, 'a');
+		//Clear the current iptvTable. Then create a new iptvTable
+		db.run("DROP TABLE IF EXISTS iptvTable");
+		console.log("Creating iptvChannels.");
+		db.run("CREATE TABLE iptvTable (channel_name TEXT,ip_address TEXT)");
+		
+		//fill iptvTable...make into function later...
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #1','udp://@239.15.15.1:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #2','udp://@239.15.15.2:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #3','udp://@239.15.15.2:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Johnson TV','udp://@239.15.15.4:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Quad Split ISS Downlink','udp://@239.15.15.5:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 1','udp://@239.15.15.6:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 2','udp://@239.15.15.7:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 3','udp://@239.15.15.8:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 4','udp://@239.15.15.9:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Front Left','udp://@239.15.15.10:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Left Side','udp://@239.15.15.11:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Back Left','udp://@239.15.15.12:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Front Side','udp://@239.15.15.13:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Right Side','udp://@239.15.15.14:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Info','udp://@239.15.15.16:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Radar','udp://@239.15.15.17:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('CNN','udp://@239.15.15.35:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV Guide','udp://@239.15.15.36:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KUBE','udp://@239.15.15.38:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRIV 26 FOX','udp://@239.15.15.39:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KHOU 11 CBS','udp://@239.15.15.40:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRPC 2 NBC','udp://@239.15.15.41:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KTRK 13 ABC','udp://@239.15.15.42:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Scola Germany','udp://@239.15.15.43:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Satellite Map','udp://@239.15.15.45:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Channel','udp://@239.15.15.46:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Educational','udp://@239.15.15.47:30120')");
+		
+		db.each("SELECT * FROM iptvTable", function(err, row) {
+			console.log(row.channel_name + ", " + row.ip_address);
+	db.each("SELECT pID, location, orgcode FROM Pidentities", function(err,row){
+		populateFolders(row.pID, row.location, row.orgcode);
+		});
+		console.log("Table Created");
+	});
+
+} catch (err) {
+	console.log('Error updating database, potentially a permissions issue');
+    console.log(err);
 }
 
 /*--------------------------------------------------------------------------------------------------	
@@ -370,6 +422,161 @@ function sendNotification(piip, message, duration) {
     outreq.end();
 }
 
+
+/*--------------------------------------------------------------------------------------------------	
+// emergencyOverride : 
+// Checks if Control has been enabled or not. Calls callEmergency() with the source option selected from post data. 
+//Check whether Control is enabled or not. Then check the play source selected. */
+
+function emergencyOverride()
+{
+	if (alertChunk.Control == "ON") {
+		console.log("CONTROL HAS BEEN ACTIVATED");
+		console.log("CHECKING PLAY SOURCE");
+		callEmergency(alertChunk.Source);
+	}
+	else {
+		console.log("CONTROL HAS NOT BEEN ACTIVATED");
+		console.log("Nothing will be changed");
+	}
+}
+
+
+
+/*--------------------------------------------------------------------------------------------------	
+// callEmergency : string
+// Checks the source of emergency content given from selected postData and then calls playEmergencyFolder() 
+// INPUT: emergencyCall - Source of Emergency content
+// Examples:
+//		callEmergency(alertChunk.Source) -> calls playEmergency*/
+function callEmergency(var emergencyCall) {
+    if (emergencyCall == "EMERGENCY FOLDER") {
+		playEmergencyFolder(alertChunk.Destination);
+	else if (emergencyCall == "IPTV")
+		playEmergencyIPTV(alertChunk.Destination);
+	else
+		console.log("Can't play from Emergency file source");
+	}
+}
+
+/*--------------------------------------------------------------------------------------------------	
+// playEmergencyFolder : string,
+// Passes the data as a json object to overrides.py which then handles the ExecuteAddon functionality to playEmergency
+// INPUT: emergencyDestination - Which Pi's need to play
+// Examples:
+// playEmergencyFolder(alertChunk.Destination ) -> calls playEmergency*/
+
+//Need to get the IPaddress of Pi here...
+function playEmergencyFolder()
+	var data = {
+        jsonrpc: "2.0",
+        id: "0",
+        method: "Addons.ExecuteAddon",
+        params: {
+            wait: true,
+            addonid: "service.digital.signage",
+            params: ["emergency", emergencyDestination.toString()]
+        }
+    };
+
+	dataString = JSON.stringify(data);
+	
+    var headers = {
+        "Content-Type": "application/json",
+        "Content-Length": dataString.length
+    };
+
+    var options = {
+        host: piip,
+        port: 80,
+        path: "/jsonrpc",
+        method: "POST",
+        headers: headers
+    };
+
+	//Create the outgoing request object
+    var outreq = http.request(options, function (res) {
+        res.setEncoding('utf-8');
+        var responseString = '';
+
+        res.on('data', function (data) {
+            responseString += data;
+        });
+
+        res.on('end', function () {
+            var resultObject = JSON.parse(responseString);
+        });
+    });
+
+    outreq.on('error', function (e) {
+        // TODO: handle error. 
+    });
+
+	//Write the request
+    outreq.write(dataString);
+    outreq.end();
+	}
+}
+
+/*--------------------------------------------------------------------------------------------------	
+// playEmergencyIPTV : string,
+// Passes the data as a json object to overrides.py which then handles the ExecuteAddon functionality to playIPTV
+// INPUT: emergencyDestination - Which Pi's need to play
+// Examples:
+// playEmergencyFolder(alertChunk.Destination ) -> calls playIPTV*/
+function playEmergencyIPTV(var emergencyDestination)
+	var data = {
+        jsonrpc: "2.0",
+        id: "0",
+        method: "Addons.ExecuteAddon",
+        params: {
+            wait: true,
+            addonid: "service.digital.signage",
+            params: ["iptv", emergencyDestination.toString()]
+        }
+    };
+
+	dataString = JSON.stringify(data);
+	
+    var headers = {
+        "Content-Type": "application/json",
+        "Content-Length": dataString.length
+    };
+
+    var options = {
+        host: piip,
+        port: 80,
+        path: "/jsonrpc",
+        method: "POST",
+        headers: headers
+    };
+
+	//Create the outgoing request object
+    var outreq = http.request(options, function (res) {
+        res.setEncoding('utf-8');
+        var responseString = '';
+
+        res.on('data', function (data) {
+            responseString += data;
+        });
+
+        res.on('end', function () {
+            var resultObject = JSON.parse(responseString);
+        });
+    });
+
+    outreq.on('error', function (e) {
+        // TODO: handle error. 
+    });
+
+	//Write the request
+    outreq.write(dataString);
+    outreq.end();
+	}
+}
+
+
+
 http.createServer(function (inreq, res) {
 	var body = '';
 	
@@ -409,8 +616,9 @@ http.createServer(function (inreq, res) {
 
 //Create server for webpage
 var HTMLserver=http.createServer(function(req,res){
-	console.log('Created server listening on port 8080');
+	console.log('Server listening on port 8080');
 	
+	//setup handler here
 	if (req.method=='GET')
 	{
 		var displayChannels = '';
@@ -509,8 +717,10 @@ var HTMLserver=http.createServer(function(req,res){
 			stmt2.each(function(err, row)
 			{
 				console.log(row.IP_address);
-				playEmergency(row.IP_address);
-				sourceCheck() //this line added
+				
+				emergencyOverride(piipSelect);
+				console.log("PiipSelect");
+				console.log(piipSelect);
 			});
 
 
@@ -519,3 +729,9 @@ var HTMLserver=http.createServer(function(req,res){
 		});
 	}
 }).listen(8080);
+
+
+
+
+
+

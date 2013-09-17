@@ -1,4 +1,4 @@
-import re
+ re
 import os
 import sys
 import time
@@ -68,7 +68,7 @@ if (__name__ == "__main__"):
 		dumpSettings()
 	elif(sys.argv[1] == "emergency"):
 		playEmergency(sys.argv[1:])
-    	elif(sys.argv[1] == "iptv"):
+    elif(sys.argv[1] == "iptv"):
 		playIPTV(sys.argv[1:])
     	else:
 		xbmc.log("Unknown overrides command "+sys.argv[1])
