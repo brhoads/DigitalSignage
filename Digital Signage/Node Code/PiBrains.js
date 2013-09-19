@@ -708,7 +708,7 @@ http.createServer(function (inreq, res) {
 
 //Create server for webpage
 var HTMLserver=http.createServer(function(req,res){
-	console.log('Server listening on port 8080');
+	console.log('Server listening on port 80');
 	
 	//setup handler here
 	if (req.method=='GET')
@@ -787,15 +787,20 @@ var HTMLserver=http.createServer(function(req,res){
 			res.end(util.inspect(querystring.parse(alert)));
 			alertChunk = querystring.parse(alert);
 			console.log(alertChunk.Destination);
-
-			var piipSelect = "SELECT ipaddress FROM Pidentities WHERE ";
-			alertChunk.Destination.forEach(function(currentIterationOfLoop)
-			{
-				piipSelect += "rowid = " + currentIterationOfLoop + " OR ";
-			});
-			console.log(piipSelect);
-			piipSelect = S(piipSelect).chompRight(" OR ").s;
 			
+			var piipSelect = "SELECT ipaddress FROM Pidentities WHERE ";
+			if (alertChunk.Destination.length == 1) {
+				console.log(piipSelect);
+				piipSelect += "rowid = 1";
+			}
+			else {
+				alertChunk.Destination.forEach(function(currentIterationOfLoop)
+				{
+					piipSelect += "rowid = " + currentIterationOfLoop + " OR ";
+				});
+				console.log(piipSelect);
+				piipSelect = S(piipSelect).chompRight(" OR ").s;
+			}
 			
 			var stmt2= db.prepare(piipSelect);
 			stmt2.each(function(err, row)
@@ -804,7 +809,6 @@ var HTMLserver=http.createServer(function(req,res){
 			
 				console.log("CALLING EMERGENCY OVERRIDE");
 				emergencyOverride(row.ipaddress);
-				//emergencyOverride(piipSelect);
 				console.log("EMERGENCY OVERRIDE COMPLETE");
 			});
 
