@@ -1,16 +1,8 @@
-import re
-import os
 import sys
-import time
-import binascii
-import urllib
-import urllib2
-from collections import deque
+import subprocess
 import xbmc
 import xbmcaddon
 import xbmcgui
-import socket
-import urlparse
 
 if sys.version_info < (2, 7):
     import simplejson
@@ -50,6 +42,8 @@ def dumpSettings():
 	xbmc.log("Sending back contents of settings file")
 def playEmergency(args):
 	xbmc.log("Emergency playing")
+	#Ensure the TV is on
+	subprocess.call("echo 'on 0' | cec-client -s", shell=True)
 def playIPTV(args):
 	xbmc.log("IPTV playing")
 
