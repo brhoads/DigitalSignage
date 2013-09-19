@@ -53,6 +53,7 @@ try {
 watcher = hound.watch(MEDIA_ROOT);
 watcher.on('create',updateFoldersCreate);
 watcher.on('delete',updateFoldersDelete);
+
 try {
     db.serialize(function() {
 		console.log('Opening Database Once Again.');
