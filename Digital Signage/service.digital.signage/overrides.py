@@ -47,9 +47,6 @@ def playEmergency(args):
 	xbmc.log("Emergency playing")
 	#Ensure the TV is on
 	subprocess.call("echo 'on 0' | cec-client -s", shell=True)
-	xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFilling/EmergencyOverride")')
-	#xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFilling/EmergencyOverride)');
-	xbmc.executebuiltin("Action(Play)")
 def playIPTV(args):
 	xbmc.log("IPTV playing")
 
@@ -75,3 +72,6 @@ if (__name__ == "__main__"):
 		xbmc.executebuiltin('Notification("Digital Signage","Unknown overrides command",5000)')
     except:
 	xbmc.log("error understanding override")
+
+    while( not xbmc.abortRequested):
+	xbmc.sleep(100)
