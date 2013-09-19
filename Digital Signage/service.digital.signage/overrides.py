@@ -1,5 +1,6 @@
 import sys
 import subprocess
+import time
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -28,6 +29,7 @@ class XBMCPlayer(xbmc.Player):
 		xbmc.log("Playback Ended")
 		self.playSignage()
 	def playSignage(self):
+		time.sleep(5)
 		xbmc.log("Playing Media")
 		xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFolders/'+__addon__.getSetting("PiDee")+'")')
 		xbmc.executebuiltin("Action(Play)")
@@ -36,6 +38,7 @@ def setPiDee(piDee):
 	try:
 		__addon__.setSetting("PiDee", piDee[1])
 		xbmc.log("PiDee set to "+piDee[1])
+		time.sleep(3)
 	except:
 		xbmc.log("Unable to set pidee to "+piDee[1])		
 def dumpSettings():
