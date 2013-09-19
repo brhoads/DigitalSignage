@@ -512,11 +512,12 @@ function updateDatabase(piDee, loc, org, piip) {
 
 /*--------------------------------------------------------------------------------------------------	
 // emergencyOverride : string
-// Checks if Control has been enabled or not. Calls callEmergency() with the source option selected from post data. 
-// Check whether Control is enabled or not. Then check the play source selected.
+// Checks if Emergency Override is "ON" or "OFF".
+// If ON, Calls callEmergency() and Activate EmergencyOverride folder. 
+// If OFF, Calls playPi() and Disables EmergencyOverride folder and activates standard playlist.   
 // INPUT: emergencyDestination - The piipSelect value. aka IP address.
 // Example:
-//		emergencyOverride(piipSelect) */
+//		emergencyOverride(row.ipaddress) */
 
 function emergencyOverride(emergencyDestination)
 {
