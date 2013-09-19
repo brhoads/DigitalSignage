@@ -25,7 +25,6 @@ var PIFOLDERS_ROOT = "C:\\DigitalSignage\\media\\piFolders";
 //Location where the Pi can access the folders above, either SMB share or NFS
 //	If NFS, the share must be mounted
 var NFS_MNT_ROOT = "/media"
-//var NFS_MNT_ROOT = "C:\\"
 
 //--------------------------------------------------------------------------------------------------
 // Database Initialization
@@ -52,11 +51,67 @@ try {
 //-------------------------------------------------------------------------------------------------
 // Hound Filesystem Watching
 watcher = hound.watch(MEDIA_ROOT);
-watcher.on('create',updateFolders);
+watcher.on('create',updateFoldersCreate);
+watcher.on('delete',updateFoldersDelete);
+try {
+    db.serialize(function() {
+		console.log('Opening Database Once Again.');
+		fs.openSync(DATABASE, 'a');
+		
+		//Clear the current iptvTable. Then create a new iptvTable
+		db.run("DROP TABLE IF EXISTS iptvTable");
+		console.log("Creating iptvChannels.");
+		db.run("CREATE TABLE iptvTable (channel_name TEXT,ip_address TEXT)");
+		
+		//fill iptvTable...make into function later...
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #1','udp://@239.15.15.1:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #2','udp://@239.15.15.2:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #3','udp://@239.15.15.2:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Johnson TV','udp://@239.15.15.4:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Quad Split ISS Downlink','udp://@239.15.15.5:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 1','udp://@239.15.15.6:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 2','udp://@239.15.15.7:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 3','udp://@239.15.15.8:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 4','udp://@239.15.15.9:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Front Left','udp://@239.15.15.10:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Left Side','udp://@239.15.15.11:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Back Left','udp://@239.15.15.12:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Front Side','udp://@239.15.15.13:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Right Side','udp://@239.15.15.14:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Info','udp://@239.15.15.16:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Radar','udp://@239.15.15.17:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('CNN','udp://@239.15.15.35:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV Guide','udp://@239.15.15.36:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KUBE','udp://@239.15.15.38:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRIV 26 FOX','udp://@239.15.15.39:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KHOU 11 CBS','udp://@239.15.15.40:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRPC 2 NBC','udp://@239.15.15.41:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KTRK 13 ABC','udp://@239.15.15.42:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Scola Germany','udp://@239.15.15.43:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Satellite Map','udp://@239.15.15.45:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Channel','udp://@239.15.15.46:30120')");
+		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Educational','udp://@239.15.15.47:30120')");
+		
+		db.each("SELECT * FROM iptvTable", function(err, row) {
+			console.log(row.channel_name + ", " + row.ip_address);
+		});
+		console.log("Table Created");
+	});
 
+} catch (err) {
+	console.log('Error updating database, potentially a permissions issue');
+    console.log(err);
+}
 
-
-function updateFolders(file){
+/*--------------------------------------------------------------------------------------------------	
+// updateFoldersCreate : string
+// Adds the given file to all Pi playlists that play the folder the file is added to
+// INPUT: file - The file path of the newly created file
+// CALLS: playPi
+// Examples:
+//		updateFoldersCreate("C:\DigitalSignage\media\piFilling\Org\testing.jpg") -> Adds testing.jpg to 
+//			all Pi's piFolders that watch C:\DigitalSignage\media\piFilling\Org */
+function updateFoldersCreate(file){
 	console.log('File Created:' +file);
 	console.log('Path: '+ path.dirname(file.replace(/\//g, '\\')));
 	//Search the db for all Pi's that rely on the path of the updated file
@@ -67,24 +122,56 @@ function updateFolders(file){
 		var pathArray = file.replace(/\//g, '\\').split("\\");
 		var length = pathArray.length;
 		var piFolder = PIFOLDERS_ROOT + path.sep + row.pID + path.sep;
-		//Create a unique filename for each symlink by using the path
 		if (length > 3) {
 			filename = pathArray[length - 3] + "." + pathArray[length - 2] + "." + pathArray[length - 1];
 		} else {
 			filename = pathArray[pathArray.length - 1];
 		}
+		
 		//Add the file to the given piFolder for persistence
 		fs.symlink(file.replace(/\//g, '\\'), piFolder + filename, function (err) {
                         console.log("Trying ze link: " + piFolder + filename);
                         if (err) console.error(err.code);
-                    });
-		
-		//Inject into the Pi's Playlist for immediacy
-		//addToPlaylist(row.ipaddress, NFS_MNT_ROOT+'/piFolders/'+row.pID+'/'+filename);
+		});
+		//Tell the Pi to recollect the pictures in the piFolder/piDee folder
 		playPi(row.ipaddress);
 	});
 }
 
+/*--------------------------------------------------------------------------------------------------	
+// updateFoldersDelete : string
+// Adds the given file to all Pi playlists that play the folder the file is added to
+// INPUT: file - The file path of the newly created file
+// CALLS: playPi
+// Examples:
+//		updateFoldersDelete("C:\DigitalSignage\media\piFilling\Org\testing.jpg") -> Removes testing.jpg from all the 
+//			Pi's piFolders that depend on C:\DigitalSignage\media\piFilling\Org */
+function updateFoldersDelete(file){
+	console.log('File Deleted:' +file);
+	console.log('Path: '+ path.dirname(file.replace(/\//g, '\\')));
+	//Search the db for all Pi's that rely on the path of the updated file
+	db.each("SELECT pID, ipaddress, location, orgcode FROM Pidentities WHERE mediapath LIKE '%"+path.dirname(file.replace(/\//g, '\\'))+"%'", function(err,row){
+		console.log(row);
+		//Create "unique" filename
+		//Parse out any improper path separators **WINDOWS SPECIFIC CODE**
+		var pathArray = file.replace(/\//g, '\\').split("\\");
+		var length = pathArray.length;
+		var piFolder = PIFOLDERS_ROOT + path.sep + row.pID + path.sep;
+		if (length > 3) {
+			filename = pathArray[length - 3] + "." + pathArray[length - 2] + "." + pathArray[length - 1];
+		} else {
+			filename = pathArray[pathArray.length - 1];
+		}
+		
+		//Add the file to the given piFolder for persistence
+		fs.unlink(piFolder + filename, function (err) {
+                        console.log("Deleting " + piFolder + filename);
+                        if (err) console.error(err.code);
+		});
+		//Tell the Pi to recollect the pictures in the piFolder/piDee folder
+		playPi(row.ipaddress);
+	});
+}
 function addToPlaylist(piip, file){
 	console.log(file);
 	var data = {
@@ -127,59 +214,6 @@ function addToPlaylist(piip, file){
 	//Write the request
     outreq.write(dataString);
     outreq.end();
-}
-
-
-
-try {
-    db.serialize(function() {
-		console.log('Opening Database Once Again.');
-		fs.openSync(DATABASE, 'a');
-		//Clear the current iptvTable. Then create a new iptvTable
-		db.run("DROP TABLE IF EXISTS iptvTable");
-		console.log("Creating iptvChannels.");
-		db.run("CREATE TABLE iptvTable (channel_name TEXT,ip_address TEXT)");
-		
-		//fill iptvTable...make into function later...
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #1','udp://@239.15.15.1:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #2','udp://@239.15.15.2:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV #3','udp://@239.15.15.2:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Johnson TV','udp://@239.15.15.4:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Quad Split ISS Downlink','udp://@239.15.15.5:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 1','udp://@239.15.15.6:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 2','udp://@239.15.15.7:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('ISS Downlink 3','udp://@239.15.15.8:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Iss Downlink 4','udp://@239.15.15.9:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Front Left','udp://@239.15.15.10:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Left Side','udp://@239.15.15.11:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('FCR-Back Left','udp://@239.15.15.12:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Front Side','udp://@239.15.15.13:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('WFCR-Right Side','udp://@239.15.15.14:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Info','udp://@239.15.15.16:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Weather Radar','udp://@239.15.15.17:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('CNN','udp://@239.15.15.35:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA TV Guide','udp://@239.15.15.36:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KUBE','udp://@239.15.15.38:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRIV 26 FOX','udp://@239.15.15.39:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KHOU 11 CBS','udp://@239.15.15.40:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KRPC 2 NBC','udp://@239.15.15.41:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('KTRK 13 ABC','udp://@239.15.15.42:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Scola Germany','udp://@239.15.15.43:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('Satellite Map','udp://@239.15.15.45:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Channel','udp://@239.15.15.46:30120')");
-		db.run("INSERT INTO iptvTable(channel_name, ip_address) VALUES ('NASA Educational','udp://@239.15.15.47:30120')");
-		
-		db.each("SELECT * FROM iptvTable", function(err, row) {
-			console.log(row.channel_name + ", " + row.ip_address);
-	db.each("SELECT pID, location, orgcode FROM Pidentities", function(err,row){
-		populateFolders(row.pID, row.location, row.orgcode);
-		});
-		console.log("Table Created");
-	});
-
-} catch (err) {
-	console.log('Error updating database, potentially a permissions issue');
-    console.log(err);
 }
 
 /*--------------------------------------------------------------------------------------------------	
@@ -480,27 +514,6 @@ function sendNotification(piip, message, duration) {
     outreq.end();
 }
 
-
-/*--------------------------------------------------------------------------------------------------	
-// emergencyOverride : string
-// Checks if Control has been enabled or not. Calls callEmergency() with the source option selected from post data. 
-// Check whether Control is enabled or not. Then check the play source selected.
-// INPUT: emergencyDestination - The piipSelect value. aka IP address.
-// Example:
-//		emergencyOverride(piipSelect) */
-
-function emergencyOverride(emergencyDestination){
-	if (alertChunk.Control == "ON") {
-		console.log("CONTROL HAS BEEN ACTIVATED");
-		console.log("CHECKING PLAY SOURCE");
-		callEmergency(alertChunk.Source, emergencyDestination);
-	}
-	else {
-		console.log("CONTROL HAS NOT BEEN ACTIVATED");
-		console.log("Nothing will be changed");
-		}
-
-}
 //--------------------------------------------------------------------------------------------------
 function updateDatabase(piDee, loc, org, piip) {
     //updating the location and orgcode in the table if it does not match the location/org in XBMC
@@ -520,7 +533,60 @@ function updateDatabase(piDee, loc, org, piip) {
     });
 }
 
+http.createServer(function (inreq, res) {
+	var body = '';
+	
+	console.log('Created server listening on port 8124');
 
+	//Append all incoming data to 'body' which is flushed on inreq.end
+    inreq.on('data', function (data) {
+        body += data;
+    });
+	//When the Pi is doing sending it's pidentity, send back any changes or OK
+    inreq.on('end', function () {
+        var piChunk = '';
+		var piDee = '';
+		console.log('Server received Pi');
+		piChunk = JSON.parse(body);
+		body = ''; //Clear the HTML Request contents for incoming requests !!Not sure if this is necessary
+        console.log(piChunk);
+		
+		//If the sent in piDee is the default -1, it needs a new piDee
+		if(piChunk.piDee == -1){
+			piDee = addNewPi(piChunk.location, piChunk.org, piChunk.piip); 
+			console.log('Wrote new piDee of '+piDee+' to Pi"');
+		} else{
+			//If the Pi is already in the database, we potentially need to update it's settings
+			updateDatabase(piChunk.piDee,piChunk.location, piChunk.org, piChunk.piip);			
+		}
+		res.writeHead(200, {
+            'Content-Type': 'application/json'
+        });
+        res.end();
+
+        
+    });
+}).listen(8124);
+
+/*--------------------------------------------------------------------------------------------------	
+// emergencyOverride : string
+// Checks if Control has been enabled or not. Calls callEmergency() with the source option selected from post data. 
+// Check whether Control is enabled or not. Then check the play source selected.
+// INPUT: emergencyDestination - The piipSelect value. aka IP address.
+// Example:
+//		emergencyOverride(piipSelect) */
+function emergencyOverride(emergencyDestination){
+	if (alertChunk.Control == "ON") {
+		console.log("CONTROL HAS BEEN ACTIVATED");
+		console.log("CHECKING PLAY SOURCE");
+		callEmergency(alertChunk.Source, emergencyDestination);
+	}
+	else {
+		console.log("CONTROL HAS NOT BEEN ACTIVATED");
+		console.log("Nothing will be changed");
+		}
+
+}
 
 /*--------------------------------------------------------------------------------------------------	
 // callEmergency : string, string
@@ -654,45 +720,6 @@ function playEmergencyIPTV(emergencyDestination) {
     outreq.end();
 }
 
-
-
-http.createServer(function (inreq, res) {
-	var body = '';
-	
-	console.log('Created server listening on port 8124');
-
-	//Append all incoming data to 'body' which is flushed on inreq.end
-    inreq.on('data', function (data) {
-		body += data;
-    });
-	//When the Pi is doing sending it's pidentity, send back any changes or OK
-    inreq.on('end', function () {
-		var piChunk = '';
-		var piDee = '';
-		console.log('Server received Pi');
-		piChunk = JSON.parse(body);
-		body = ''; //Clear the HTML Request contents for incoming requests !!Not sure if this is necessary
-		console.log(piChunk);
-		
-		//If the sent in piDee is the default -1, it needs a new piDee
-		if(piChunk.piDee == -1){
-			piDee = addNewPi(piChunk.location, piChunk.org, piChunk.piip); 
-			console.log('Wrote new piDee of '+piDee+' to Pi"');
-		} else{
-			//If the Pi is already in the database, we potentially need to update it's settings
-			updateDatabase(piChunk.piDee,piChunk.location, piChunk.org, piChunk.piip);			
-		}
-		res.writeHead(200, {
-            'Content-Type': 'application/json'
-        });
-        res.end();
-
-        
-    });
-}).listen(8124);
-
-
-
 //Create server for webpage
 var HTMLserver=http.createServer(function(req,res){
 	console.log('Server listening on port 8080');
@@ -807,7 +834,7 @@ var HTMLserver=http.createServer(function(req,res){
 
 		});
 	}
-}).listen(8080);
+}).listen(80);
 
 
 
