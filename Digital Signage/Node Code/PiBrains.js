@@ -746,7 +746,7 @@ var HTMLserver=http.createServer(function(req,res){
 
 
 		//Display the data on webpage in an HTML form
-		stmt.finalize(function() {
+		iptvstmt.finalize(function() {
 			res.end('<html> \
 						<head> \
 						</head> \
@@ -758,7 +758,7 @@ var HTMLserver=http.createServer(function(req,res){
 								<b>Select the Source of Notification</b> <br> <br> \
 								<input type="radio" name="Source" value="IPTV">IPTV \
 									<select name="Channels"> \
-									<option value="Default">Select a Channel...</option>'
+									<option value="Default">Select a Channel...</option><br>'
 									+displayChannels+
 									'</select> <br>\
 								<input type="radio" name="Source" value="EMERGENCY FOLDER">EMERGENCY FOLDER <br>\
