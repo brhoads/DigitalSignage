@@ -47,6 +47,8 @@ def playEmergency(args):
 	xbmc.log("Emergency playing")
 	#Ensure the TV is on
 	subprocess.call("echo 'on 0' | cec-client -s", shell=True)
+	xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFilling/EmergencyOverride")')
+	xbmc.executebuiltin("Action(Play)")
 def playIPTV(args):
 	xbmc.log("IPTV playing")
 
