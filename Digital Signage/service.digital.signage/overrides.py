@@ -52,11 +52,11 @@ def playEmergency(args):
 def playIPTV(args):
 	xbmc.log("IPTV playing")
 
+digitalSignagePlayer = XBMCPlayer()
+xbmc.log("Create Digital Signage Player")
 #Standard setup of main
 if (__name__ == "__main__"):
     xbmc.log('Version %s started' % __addonversion__)
-    digitalSignagePlayer = XBMCPlayer()
-    xbmc.log("Create Digital Signage Player")
 
     try:
     	if(sys.argv[1] == "piDee"):

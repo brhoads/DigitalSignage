@@ -2,6 +2,7 @@ import os
 import urllib2
 import xbmc
 import xbmcaddon
+import overrides
 
 if sys.version_info < (2, 7):
     import simplejson
@@ -21,38 +22,6 @@ __resource__   = xbmc.translatePath( os.path.join( __cwd__, 'resources', 'lib' )
 
 PORT = '8124'
 
-class XBMCPlayer(xbmc.Player):
-	#Subclass of XBMC.Player.
-	#   OVERRIDES: onplayback events
-	
-	def __init__(self, *args):
-		pass
-	def onPlayBackEnded( self ):
-		xbmc.log("Playback Ended")
-		self.playSignage()
-	def playSignage( self ):
-		xbmc.log("Playing Media")
-		xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFolders/'+__addon__.getSetting("PiDee")+'")')
-		xbmc.executebuiltin("Action(Play)")
-		
-		##Enable below to play recursive slides, doesn't play video in Frodo
-		#xbmc.executebuiltin('Action(Left)')
-		#xbmc.executebuiltin('Action(Down)')
-		#xbmc.executebuiltin('Action(Down)')
-		#xbmc.executebuiltin('Action(Down)')
-		#xbmc.executebuiltin('Action(Down)')
-		#xbmc.executebuiltin('Action(Down)')
-		#xbmc.executebuiltin('Action(Select)')
-		
-		#xbmc.executebuiltin('xbmc.SlideShow('+"/media/piFolders/"+__addon__.getSetting("PiDee")+')')
-		#xbmc.executebuiltin('SlideShow("/media/piFolders/9","recursive")')
-		#listing = os.listdir("/media/piFolders/"+__addon__.getSetting("PiDee"))
-		#for infile in listing:
-		#	filepath = "/media/piFolders/"+__addon__.getSetting("PiDee")+"/"+infile
-		#	self.play( filepath )
-		#xbmc.executebuiltin('xbmc.playmedia('+"/media/piFolders/"+__addon__.getSetting("PiDee")+"/"+infile+')')
-		#	xbmc.log("Filepath"+filepath)
-		#	time.sleep(5)		
 def phoneHome():
     #gather information such as Pi IP Address and settings information from addon
     piip = xbmc.getIPAddress()
@@ -66,12 +35,17 @@ def phoneHome():
     data = location, piip, org
     
     print data
-     
-    req = urllib2.Request('http://' + serverIP + ':'+PORT)
-    req.add_header('Content-Type', 'application/json')
-    response = urllib2.urlopen(req, simplejson.dumps(pidentity))
-    print response
-
+    
+    try: 
+        req = urllib2.Request('http://' + serverIP + ':'+PORT)
+        req.add_header('Content-Type', 'application/json')
+        response = urllib2.urlopen(req, simplejson.dumps(pidentity))
+        print response
+    except:
+	#Go ahead and play whatever media we knew about if urllib timeouts
+	if (piDee != -1):
+		overrides.digitalSignagePlayer.playSignage()    
+	
 #Standard setup of main
 if (__name__ == "__main__"):
     xbmc.log('Version %s started' % __addonversion__)
@@ -79,8 +53,6 @@ if (__name__ == "__main__"):
     #time.sleep(10)
 
     #If succesful the NodeJS server will tell the Pi to play
+    #If unsuccesful the Pi will attempt to play what is in it's piFolder
     phoneHome()
 
-    #dsPlayer = XBMCPlayer()
-    #xbmc.log("Created Digital Signage Player")
-    #dsPlayer.playSignage()
