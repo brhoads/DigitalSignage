@@ -25,9 +25,13 @@ class XBMCPlayer(xbmc.Player):
 	# OVERRIDES: onPlayBackEnded
 	def __init__(self, *args):
 		pass
-	def onPlayBackEnded( self ):
+	def onPlayBackStopped( self ):
 		xbmc.log("Playback Ended")
-		self.playSignage()
+		if(xbmc.Player().isPlaying()):
+			xbmc.log("Not really, the video just ended")
+		else:
+			xbmc.log("Really stopped playing")
+			self.playSignage()
 	def playSignage(self):
 		time.sleep(5)
 		xbmc.log("Playing Media")
@@ -48,7 +52,7 @@ def playEmergency(args):
 	#Ensure the TV is on
 	subprocess.call("echo 'on 0' | cec-client -s", shell=True)
 	xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFilling/EmergencyOverride")')
-	xbmc.executebuiltin("Action(Play)")
+ 	xbmc.executebuiltin("Action(Play)")
 def playIPTV(args):
 	xbmc.log("IPTV playing")
 
