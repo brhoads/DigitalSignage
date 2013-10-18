@@ -105,7 +105,15 @@ try {
 }
 
 
-function updateFolders(file){
+/*--------------------------------------------------------------------------------------------------	
+// updateFoldersCreate : string
+// Adds the given file to all Pi playlists that play the folder the file is added to
+// INPUT: file - The file path of the newly created file
+// CALLS: playPi
+// Examples:
+//		updateFoldersCreate("C:\DigitalSignage\media\piFilling\Org\testing.jpg") -> Adds testing.jpg to 
+//			all Pi's piFolders that watch C:\DigitalSignage\media\piFilling\Org */
+function updateFoldersCreate(file){
 	console.log('File Created:' +file);
 	console.log('Path: '+ path.dirname(file.replace(/\//g, '\\')));
 	//Search the db for all Pi's that rely on the path of the updated file
@@ -116,22 +124,54 @@ function updateFolders(file){
 		var pathArray = file.replace(/\//g, '\\').split("\\");
 		var length = pathArray.length;
 		var piFolder = PIFOLDERS_ROOT + path.sep + row.pID + path.sep;
-		//Create a unique filename for each symlink by using the path
 		if (length > 3) {
 			filename = pathArray[length - 3] + "." + pathArray[length - 2] + "." + pathArray[length - 1];
 		} else {
 			filename = pathArray[pathArray.length - 1];
 		}
+		
 		//Add the file to the given piFolder for persistence
 		fs.symlink(file.replace(/\//g, '\\'), piFolder + filename, function (err) {
                         console.log("Trying ze link: " + piFolder + filename);
                         if (err) console.error(err.code);
-                    });
+		});
+		//Tell the Pi to recollect the pictures in the piFolder/piDee folder
+		playPi(row.ipaddress);
+	});
+}
+
+/*--------------------------------------------------------------------------------------------------	
+// updateFoldersDelete : string
+// Adds the given file to all Pi playlists that play the folder the file is added to
+// INPUT: file - The file path of the newly created file
+// CALLS: playPi
+// Examples:
+//		updateFoldersDelete("C:\DigitalSignage\media\piFilling\Org\testing.jpg") -> Removes testing.jpg from all the 
+//			Pi's piFolders that depend on C:\DigitalSignage\media\piFilling\Org */
+function updateFoldersDelete(file){
+	console.log('File Deleted:' +file);
+	console.log('Path: '+ path.dirname(file.replace(/\//g, '\\')));
+	//Search the db for all Pi's that rely on the path of the updated file
+	db.each("SELECT pID, ipaddress, location, orgcode FROM Pidentities WHERE mediapath LIKE '%"+path.dirname(file.replace(/\//g, '\\'))+"%'", function(err,row){
+		console.log(row);
+		//Create "unique" filename
+		//Parse out any improper path separators **WINDOWS SPECIFIC CODE**
+		var pathArray = file.replace(/\//g, '\\').split("\\");
+		var length = pathArray.length;
+		var piFolder = PIFOLDERS_ROOT + path.sep + row.pID + path.sep;
+		if (length > 3) {
+			filename = pathArray[length - 3] + "." + pathArray[length - 2] + "." + pathArray[length - 1];
+		} else {
+			filename = pathArray[pathArray.length - 1];
+		}
 		
-		//populateFolders(row.pID, row.location, row.orgcode);
-		
-		//Inject into the Pi's Playlist for immediacy
-		addToPlaylist(row.ipaddress, NFS_MNT_ROOT+'/piFolders/'+row.pID+'/'+filename);
+		//Add the file to the given piFolder for persistence
+		fs.unlink(piFolder + filename, function (err) {
+                        console.log("Deleting " + piFolder + filename);
+                        if (err) console.error(err.code);
+		});
+		//Tell the Pi to recollect the pictures in the piFolder/piDee folder
+		playPi(row.ipaddress);
 	});
 }
 
@@ -245,21 +285,7 @@ function populateFolder(piDee,location, org, piip) {
 		traverseFolders(piDee,location,org, piip);
 	});	
 }
-function populateFolders(piDee, location, org){
-	//Remove all previous entries in the folder
-	fs.readdir(PIFOLDERS_ROOT+path.sep+piDee,function(err,hits){
-		if(hits){
-			hits.forEach(function(entry){
-				fs.unlink(PIFOLDERS_ROOT+path.sep+piDee+path.sep+entry, function(err){
-					if(err) console.log("Error unlinking "+entry+": "+err);
-				});
-			});
-		}
-		//Symlink the hierarchial media
-		traverseFolders(piDee,location,org);
 
-	});
-}
 /*--------------------------------------------------------------------------------------------------	
 // traverseFolders : string, string, string, string
 // Adds a new Pi to the Database, creates it's folder in PIFOLDERS_ROOT, and populates the folders
@@ -511,6 +537,40 @@ function updateDatabase(piDee, loc, org, piip) {
     });
 }
 
+http.createServer(function (inreq, res) {
+	var body = '';
+	
+	console.log('Created server listening on port 8124');
+
+	//Append all incoming data to 'body' which is flushed on inreq.end
+    inreq.on('data', function (data) {
+        body += data;
+    });
+	//When the Pi is doing sending it's pidentity, send back any changes or OK
+    inreq.on('end', function () {
+        var piChunk = '';
+		var piDee = '';
+		console.log('Server received Pi');
+		piChunk = JSON.parse(body);
+		body = ''; //Clear the HTML Request contents for incoming requests !!Not sure if this is necessary
+        console.log(piChunk);
+		
+		//If the sent in piDee is the default -1, it needs a new piDee
+		if(piChunk.piDee == -1){
+			piDee = addNewPi(piChunk.location, piChunk.org, piChunk.piip); 
+			console.log('Wrote new piDee of '+piDee+' to Pi"');
+		} else{
+			//If the Pi is already in the database, we potentially need to update it's settings
+			updateDatabase(piChunk.piDee,piChunk.location, piChunk.org, piChunk.piip);			
+		}
+		res.writeHead(200, {
+            'Content-Type': 'application/json'
+        });
+        res.end();        
+    });
+}).listen(8124);
+
+
 /*--------------------------------------------------------------------------------------------------	
 // emergencyOverride : string
 // Checks if Emergency Override is "ON" or "OFF".
@@ -613,7 +673,7 @@ function playEmergencyFolder(emergencyDestination) {
 }
 
 /*--------------------------------------------------------------------------------------------------	
-// playEmergencyFolder : string
+// playEmergencyIPTV : string
 // Passes the data as a json object to overrides.py which then handles the ExecuteAddon functionality to playEmergency
 // INPUT: emergencyDestination - IPaddress of Pi's needing to be played
 // Examples:
