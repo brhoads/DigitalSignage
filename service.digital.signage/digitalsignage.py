@@ -1,16 +1,8 @@
-import re
 import os
-import sys
-import time
-import binascii
-import urllib
 import urllib2
-from collections import deque
 import xbmc
 import xbmcaddon
-import xbmcgui
-import socket
-
+import overrides
 
 if sys.version_info < (2, 7):
     import simplejson
@@ -28,47 +20,38 @@ __icon__         = __addon__.getAddonInfo('icon')
 __cwd__          = __addon__.getAddonInfo('path').decode("utf-8")
 __resource__   = xbmc.translatePath( os.path.join( __cwd__, 'resources', 'lib' ).encode("utf-8") ).decode("utf-8")
 
-#sys.path.append(__resource__)
+PORT = '8124'
 
-def watchdog():
-    while (not xbmc.abortRequested):
-        if (xbmc.Player().isPlaying()):
-            print 'VIDEO IS PLAYING'
-            time.sleep(60)
-        else:
-            print 'NO MEDIA IS PLAYING...REDO PIDENTITIES'
-            play()
-            time.sleep(60)
-
-def play():
+def phoneHome():
     #gather information such as Pi IP Address and settings information from addon
-    #piip = socket.gethostbyname(socket.getfqdn())
     piip = xbmc.getIPAddress()
     location = __addon__.getSetting("Location")
     org = __addon__.getSetting("Org")
     piDee = __addon__.getSetting("PiDee")
-    ServerIP = __addon__.getSetting("ServerIP")
+    serverIP = __addon__.getSetting("ServerIP")
     
     pidentity = {'location' : location, 'org' : org, 'piip' : piip, 'piDee' : piDee}
     
     data = location, piip, org
     
     print data
-     
-    req = urllib2.Request('http://' + ServerIP + ':8124')
-    req.add_header('Content-Type', 'application/json')
-    print simplejson.dumps(pidentity)
-    response = urllib2.urlopen(req, simplejson.dumps(pidentity))
-    print response
-
+    
+    try: 
+        req = urllib2.Request('http://' + serverIP + ':'+PORT)
+        req.add_header('Content-Type', 'application/json')
+        response = urllib2.urlopen(req, simplejson.dumps(pidentity))
+        print response
+    except:
+	#Go ahead and play whatever media we knew about if urllib timeouts
+	if (piDee != -1):
+		overrides.digitalSignagePlayer.playSignage()    
+	
 #Standard setup of main
 if (__name__ == "__main__"):
     xbmc.log('Version %s started' % __addonversion__)
-    print "Digital Signage add-on is active"
-    time.sleep(10)
+    xbmc.log('Digital Signage add-on is active')
 
-    play()
-    
-    time.sleep(60)
-    
-    #watchdog()
+    #If succesful the NodeJS server will tell the Pi to play
+    #If unsuccesful the Pi will attempt to play what is in it's piFolder
+    phoneHome()
+

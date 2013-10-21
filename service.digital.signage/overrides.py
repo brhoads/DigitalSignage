@@ -25,15 +25,15 @@ class XBMCPlayer(xbmc.Player):
 	# OVERRIDES: onPlayBackEnded
 	def __init__(self, *args):
 		pass
-	def onPlayBackStopped( self ):
-		xbmc.log("Playback Ended")
-		if(xbmc.Player().isPlaying()):
-			xbmc.log("Not really, the video just ended")
-		else:
-			xbmc.log("Really stopped playing")
-			self.playSignage()
+	#def onPlayBackStopped( self ):
+	#	xbmc.log("Playback Ended")
+	#	if(xbmc.Player().isPlaying()):
+	#		xbmc.log("Not really, the video just ended")
+	#	else:
+	#		xbmc.log("Really stopped playing")
+	#		self.playSignage()
 	def playSignage(self):
-		time.sleep(5)
+		time.sleep(3)
 		xbmc.log("Playing Media")
 		xbmc.executebuiltin('ActivateWindow(Pictures,"/media/piFolders/'+__addon__.getSetting("PiDee")+'")')
 		xbmc.executebuiltin("Action(Play)")
@@ -80,4 +80,4 @@ if (__name__ == "__main__"):
 	xbmc.log("error understanding override")
 
     while( not xbmc.abortRequested):
-	xbmc.sleep(100)
+		xbmc.sleep(100)
