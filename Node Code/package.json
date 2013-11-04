@@ -1,14 +1,47 @@
 {
- "name":"digital-signage",
- "description":"JSC Digital Signage",
- "script":{"start":"node PiBrains.js"},
- "version":"0.5.0",
- "dependencies": {
-   "string":"1.5.x",
-   "sqlite3":"2.1.15",
-   "mkdirp":"0.3.5",
-   "winser":"0.1.5",
-   "findit2":"0.2.0",
-   "hound":"1.0.4"
- }
+  "name": "digital-signage",
+  "description": "NASA MOD Digital Signage server code",
+  "version": "0.9.0",
+  "homepage": "https://github.com/brhoads/DigitalSignage",
+  "author": {
+    "name": "Ben Rhoads",
+    "email": "benjamin.p.rhoads@nasa.gov"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/brhoads/DigitalSignage.git"
+  },
+  "bugs": {
+    "url": "https://github.com/brhoads/DigitalSignage/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/brhoads/DigitalSignage/blob/master/LICENSE-MIT"
+    }
+  ],
+  "main": "server.js",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "scripts": {
+    "test": "grunt nodeunit"
+  },
+  "dependencies": {
+    "string":"1.5.x",
+	"sqlite3":"2.1.15",
+	"mkdirp":"0.3.5",
+	"winser":"0.1.5",
+	"findit2":"0.2.0",
+	"hound":"1.0.4",
+	"express":"3.4.x"
+  },
+  "devDependencies": {
+    "grunt-contrib-jshint": "~0.6.4",
+    "grunt-contrib-nodeunit": "~0.2.0",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt": "~0.4.1",
+	"nock":"0.22.x"
+  },
+  "keywords": []
 }
