@@ -8,6 +8,8 @@
 // Provides:
 //	send - launches XBMC notification on the given Pi
 
+q = require('q');
+
 function Pi(ip, location, org, piDee) {
 	this.ip = ip;
 	this.location = location;
@@ -24,46 +26,52 @@ Pi.prototype.setDependencies = function(http){
 
 Pi.prototype.createFromDB = function(piDee, db){
 	var self = this;
+	
 	var stmt = db.prepare("SELECT ipaddress, location, orgcode FROM Pidentities WHERE rowid = "+piDee);
 	stmt.get(function(err, row){
 		self.ip = row.ipaddress;
 		self.location = row.location;
 		self.org = row.orgcode;
+		self.piDee = piDee;
+		console.log(self);
 	});
 };
 
-Pi.prototype.setNewPidee = function(db, res){
+Pi.prototype.getNewPidee = function(db, res){
 	
 	var self = this;
-
+	
+	var promise = q.defer();
+	
 	try {
-		db.run("INSERT INTO Pidentities (ipaddress, location, orgcode, timestamp, pifolder, mediapath) VALUES ('"+this.ip +"','"+this.loc+"','"+this.org+"', datetime('now'),'c:/pifolder','c:/mediapath')",function(error){
+		db.run("INSERT INTO Pidentities (ipaddress, location, orgcode, timestamp, pifolder, mediapath) VALUES ('"+this.ip +"','"+this.location+"','"+this.org+"', datetime('now'),'c:/pifolder','c:/mediapath')",function(error){
 			if(error){
 				console.log('ERROR: Error inserting Pi ('+self.ip+') into database: '+error);
 				self.sendNotification("Error adding to database","Please contant DD2 for assistance",10000);
+				promise.reject(error);
 			}
-			
-			self.piDee = this.lastID;
-			self.setPiDeeJSON(self.piDee);
-			
-			console.log('NOTICE: New piDee: '+self.piDee);
-			res.type('application/json');
-			res.send('{"piDee":'+self.piDee+'}');
+
+			promise.resolve(this.lastID);
 		});
 	} catch(e) {
 		console.log("ERROR: Fatal error in setNewPidee");
 	}
+	
+	return promise.promise;
 };
 
-Pi.prototype.updateDB = function(piDee,db, ip, location, organization){	
+Pi.prototype.updateDB = function(db, ip, location, organization){	
 	var piip = (this.ip || ip);
 	var loc = (this.location || location);
 	var org = (this.org || organization);	
 	
-	db.run("UPDATE Pidentities SET location = '" + loc + "', orgcode = '" + org + "', ipaddress = '" + piip + "' WHERE rowid =  " + piDee);
+	db.run("UPDATE Pidentities SET location = '" + loc + "', orgcode = '" + org + "', ipaddress = '" + piip + "' WHERE rowid =  " + this.piDee);
 };
 
-Pi.prototype.callJSONRPC = function(data, callback){
+Pi.prototype.callJSONRPC = function(data){
+	
+	var promise = q.defer();
+	
 	//HTTP Request Information
 	var options = {
 		host: this.ip,
@@ -84,21 +92,23 @@ Pi.prototype.callJSONRPC = function(data, callback){
 		res.on('end',function(){
 			var returnedJSON = JSON.parse(body);
 			if(returnedJSON.result != 'OK'){
-				throw "XBMC JSON Parsing Error" + dataString;
+				promise.reject('XBMC JSON Error');
+				throw "XBMC JSON Parsing Error" + dataString + body;
 			}
-			
-			callback ? callback() : '';
-			
+			promise.resolve(true);
 		});
 	});
 	
 	outreq.on('error',function(e) {
 		console.log('ERROR: sending JSONRPC Request: '+dataString+' to '+options.host);
 		console.log('ERROR: '+e);
+		promise.reject(e);
 	});
 	
 	outreq.write(dataString);
 	outreq.end();
+	
+	return promise.promise;
 };
 
 /* sendNotification: string, string, integer -> boolean
@@ -128,11 +138,7 @@ Pi.prototype.sendNotification = function(title, message, duration){
 		}
 	};
 	
-	try {
-		this.callJSONRPC(data);
-	} catch (e) {
-		throw e;
-	}
+	return this.callJSONRPC(data);
 };
 Pi.prototype.playMedia = function(){
 	var data = {
@@ -141,16 +147,12 @@ Pi.prototype.playMedia = function(){
 		method: "Addons.ExecuteAddon",
 		params: {
 			wait: true,
-			addonid: "service.diital.signage",
+			addonid: "service.digital.signage",
 			params: ["play"]
 		}
 	};
 	
-	try {
-		this.callJSONRPC(data);
-	} catch (e) {
-		throw e;
-	}
+	return this.callJSONRPC(data);
 };
 Pi.prototype.playEmergency = function(){
 	var data = {
@@ -164,11 +166,7 @@ Pi.prototype.playEmergency = function(){
 		}
 	};
 	
-	try {
-		this.callJSONRPC(data);
-	} catch (e) {
-		throw e;
-	}
+	return this.callJSONRPC(data);
 };
 Pi.prototype.playIPTV = function(){
 	var data = {
@@ -182,13 +180,9 @@ Pi.prototype.playIPTV = function(){
 		}
 	};
 	
-	try {
-		this.callJSONRPC(data);
-	} catch (e) {
-		throw e;
-	}
+	return this.callJSONRPC(data);
 };	
-Pi.prototype.setPiDeeJSON = function(piDee){
+Pi.prototype.setPiDeeJSON = function(){
 	var data = {
 		jsonrpc: "2.0",
 		id: "0",
@@ -196,15 +190,11 @@ Pi.prototype.setPiDeeJSON = function(piDee){
 		params: {
 			wait: true,
 			addonid: "service.digital.signage",
-			params: ["piDee", piDee.toString()]
+			params: ["piDee", this.piDee.toString()]
 		}
 	};
 	
-	try {
-		this.callJSONRPC(data);
-	} catch (e) {
-		throw e;
-	}	
+	return this.callJSONRPC(data);		
 }
 Pi.prototype.getIP = function(){return this.ip;}
 Pi.prototype.getLoc = function(){return this.location;}

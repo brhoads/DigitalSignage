@@ -2,6 +2,10 @@ var db = '';
 var fs = '';
 var path = '';
 
+var Pi = require('./pi.js');
+
+var PIFOLDERS_ROOT = "C:\\DigitalSignage\\media\\piFolders";
+
 // *m = required module
 exports.init = function(fsm, dbm, pathm){
 	db = dbm;
@@ -47,7 +51,7 @@ exports.updateFoldersCreate = function(file){
                         if (err) console.error(err.code);
 		});
 		//Tell the Pi to recollect the pictures in the piFolder/piDee folder
-		playPi(row.ipaddress);
+		new Pi(row.ipaddress).playMedia();
 	});
 }
 
@@ -82,6 +86,6 @@ exports.updateFoldersDelete = function(file){
                         if (err) console.error(err.code);
 		});
 		//Tell the Pi to recollect the pictures in the piFolder/piDee folder
-		playPi(row.ipaddress);
+		new Pi(row.ipaddress).playMedia();
 	});
 }
