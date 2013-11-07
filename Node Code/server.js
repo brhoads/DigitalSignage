@@ -14,7 +14,7 @@ var fwd = require('./lib/filewatchdog.js');
 var database = require('./lib/database.js');
 var express = require('express');
 var Pi = require('./lib/pi.js');
-q = require('q');
+var q = require('q');
 
 //--------------------------------------------------------------------------------------------------
 // Constants
@@ -37,7 +37,7 @@ var db = new sqlite3.Database(DATABASE);
 //Create Pidentiies if it is missing and add IPTV table & channels
 database.init(DATABASE, fs, db);
 
-//-------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 // Hound Filesystem Watching
 watcher = hound.watch(MEDIA_ROOT);
 fwd.init(fs, db, path);
@@ -47,7 +47,6 @@ watcher.on('delete',fwd.updateFoldersDelete);
 //Create the HTTP servers for the Emergency webpage and the Pi HTTP requests
 var emergencyServer = express();
 var piServer = express();
-
 
 function createNewFolder(aPi){
 	var promise = q.defer();
@@ -88,7 +87,6 @@ function deleteFolderMedia(aPi){
 	return promise.promise;
 }
 
-
 function linkFile(aPi, file){
 	//If file is Thumbs.db Hulk Smash it (aka drop it)
 	if(file.substr(file.length-9) === 'Thumbs.db'){
@@ -120,20 +118,23 @@ function findPath(parentDirectory,targetPath){
 	var foundPath = '';
 	
 	//Find relative path to org, save in targetPath
-    finder.on('file', function (file, stat) {
+    finder.on('directory', function (dir, stat) {
 		//Normalize the path
-		file = file.replace(/\//g, '\\');
-	
+		dir = dir.replace(/\//g, '\\');
+		//Break into chunks to check the last appendage
+		// C:\\Users\\Someone\\Special = C:,Users,Someone,Special
+		pathArray = dir.split('\\');
+
 		//If the directory matches org return
-        if (path.basename(path.dirname(file)) == targetPath){
+        if (pathArray[pathArray.length-1] == targetPath){
             //We found a match
-			foundPath = path.dirname(file);			
+			foundPath = dir;			
 		}
 	});
 	
 	finder.on('end',function(){
 		console.log(foundPath);
-		promise.resolve(foundPath);
+		foundPath ? promise.resolve(foundPath) : promise.reject('No Path Found');
 	});
 	
 	return promise.promise;
@@ -153,10 +154,18 @@ function populateOrg(aPi){
 		var targetPath = data;
 		console.log('We have '+targetPath);
 		
-		while(targetPath != ORG_ROOT){
+		if(aPi.getIsolated()==1){
+			//We just store our ONE path
+			console.log('Pi was isolated');
+			foundPath = targetPath;
 			paths.push(targetPath);
-			foundPath = targetPath + ';'+foundPath;
-			targetPath = path.normalize(targetPath+'\\..');
+		} else {			
+			console.log('Pi was not isolated');
+			while(targetPath != ORG_ROOT){
+				paths.push(targetPath);
+				foundPath = targetPath + ';'+foundPath;
+				targetPath = path.normalize(targetPath+'\\..');
+			}
 		}		
 	
 		finder.on('file',function(file,stat){
@@ -173,10 +182,9 @@ function populateOrg(aPi){
 		finder.on('end',function(){
 			promise.resolve(foundPath);
 		});		
-	})
+	});
 	
-	return promise.promise;
-	
+	return promise.promise;	
 }
 
 function populateLoc(aPi){
@@ -193,11 +201,18 @@ function populateLoc(aPi){
 		var targetPath = data;
 		console.log('We have '+targetPath);
 		
-		while(targetPath != LOC_ROOT){
+		if(aPi.getIsolated()==1){
+			//We just store our ONE path
+			foundPath = targetPath;
 			paths.push(targetPath);
-			foundPath = targetPath + ';'+foundPath;
-			targetPath = path.normalize(targetPath+'\\..');
-		}		
+		}
+		else {			
+			while(targetPath != LOC_ROOT){
+				paths.push(targetPath);
+				foundPath = targetPath + ';'+foundPath;
+				targetPath = path.normalize(targetPath+'\\..');
+			}
+		}
 	
 		finder.on('file',function(file,stat){
 			//Normalize the path
@@ -259,7 +274,7 @@ piServer.post('/',function(request, response){
 	   request.body.hasOwnProperty('piDee')){
 		//We have a good request
 		
-		var newPi = new Pi(request.body.piip, request.body.location, request.body.org, request.body.piDee);
+		var newPi = new Pi(request.body.piip, request.body.location, request.body.org, request.body.piDee, request.body.isolated);
 		//
 		// PIDEE == -1
 		//
@@ -292,6 +307,7 @@ piServer.post('/',function(request, response){
 				})
 				//Tell the Pi that it can play the Media now
 				.then(function(data){
+					console.log('Playing Pi');
 					return newPi.playMedia();
 				});			
 		}
@@ -301,32 +317,31 @@ piServer.post('/',function(request, response){
 		else {
 			//Compare the new Pi JSON we received to what was in the DB
 			var oldPi = new Pi();
-			db.serialize(function(){
-				oldPi.createFromDB(newPi.getPiDee(), db);
-				
-				function wait(){
-					console.log('waiting');
-					if(!oldPi.getPiDee()){
+			
+			oldPi.createFromDB(newPi.getPiDee(), db)
+			function wait(){
+				console.log('waiting');
+				if(!oldPi.getPiDee()){
 						setTimeout(wait,100);
-					} else {
+				} else {
 						console.log('Old Pi: '+oldPi.getPiDee()+oldPi.getLoc()+oldPi.getOrg());
 						console.log('New Pi: '+newPi.getPiDee()+newPi.getLoc()+newPi.getOrg());
 						
 						if((oldPi.getIP() === newPi.getIP()) &&
-						   (oldPi.getLoc() === newPi.getLoc()) && 
-						   (oldPi.getOrg() === newPi.getOrg())){
-							console.log(newPi.getPiDee()+' hasn\'t changed');
+						 (oldPi.getLoc() === newPi.getLoc()) &&
+						 (oldPi.getOrg() === newPi.getOrg())){
+								console.log(newPi.getPiDee()+' hasn\'t changed');
+								newPi.playMedia();
 						} else {
-							console.log('Pi '+newPi.getPiDee()+' has different settings, updating');
-							newPi.updateDB(db); //Update database to reflect the new settings
+								console.log('Pi '+newPi.getPiDee()+' has different settings, updating');
+								//newPi.updateDB(db); //Update database to reflect the new settings
+								newPi.playMedia();
 						}
-					}
 				}
-				
-				wait();
-			});
-			
-			response.send('Many of the truths we cling to depend on our point of view - Yoda');
+			}
+		
+			wait();
+
 		}
 	} else {
 		//We have a bad request

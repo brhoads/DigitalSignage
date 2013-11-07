@@ -10,11 +10,12 @@
 
 q = require('q');
 
-function Pi(ip, location, org, piDee) {
+function Pi(ip, location, org, piDee, isolated) {
 	this.ip = ip;
 	this.location = location;
 	this.org = org;
 	this.piDee = piDee;
+	this.isolated = typeof isolated !== 'undefined' ? isolated : 0; //0 == false!
 	this.http = '';
 }
 
@@ -27,14 +28,19 @@ Pi.prototype.setDependencies = function(http){
 Pi.prototype.createFromDB = function(piDee, db){
 	var self = this;
 	
-	var stmt = db.prepare("SELECT ipaddress, location, orgcode FROM Pidentities WHERE rowid = "+piDee);
+	var promise = q.defer();
+	
+	var stmt = db.prepare("SELECT ipaddress, location, orgcode, isolated FROM Pidentities WHERE rowid = "+piDee);
 	stmt.get(function(err, row){
 		self.ip = row.ipaddress;
 		self.location = row.location;
 		self.org = row.orgcode;
+		self.isolated = row.isolated;
 		self.piDee = piDee;
-		console.log(self);
+		promise.resolve(self);
 	});
+	
+	return promise.promise	
 };
 
 Pi.prototype.getNewPidee = function(db, res){
@@ -44,7 +50,7 @@ Pi.prototype.getNewPidee = function(db, res){
 	var promise = q.defer();
 	
 	try {
-		db.run("INSERT INTO Pidentities (ipaddress, location, orgcode, timestamp, pifolder, mediapath) VALUES ('"+this.ip +"','"+this.location+"','"+this.org+"', datetime('now'),'c:/pifolder','c:/mediapath')",function(error){
+		db.run("INSERT INTO Pidentities (ipaddress, location, orgcode, timestamp, pifolder, mediapath, isolated) VALUES ('"+this.ip +"','"+this.location+"','"+this.org+"', datetime('now'),'c:/pifolder','c:/mediapath','"+this.isolated+"')",function(error){
 			if(error){
 				console.log('ERROR: Error inserting Pi ('+self.ip+') into database: '+error);
 				self.sendNotification("Error adding to database","Please contant DD2 for assistance",10000);
@@ -61,11 +67,20 @@ Pi.prototype.getNewPidee = function(db, res){
 };
 
 Pi.prototype.updateDB = function(db, ip, location, organization){	
+	
+	var promise = q.defer();
+	
 	var piip = (this.ip || ip);
 	var loc = (this.location || location);
 	var org = (this.org || organization);	
 	
-	db.run("UPDATE Pidentities SET location = '" + loc + "', orgcode = '" + org + "', ipaddress = '" + piip + "' WHERE rowid =  " + this.piDee);
+	var self = this;
+	
+	db.run("UPDATE Pidentities SET location = '" + loc + "', orgcode = '" + org + "', ipaddress = '" + piip + "' WHERE rowid =  " + this.piDee, function(){
+		promise.resolve(self);
+	});
+	
+	return promise.promise;
 };
 
 Pi.prototype.callJSONRPC = function(data){
@@ -203,5 +218,6 @@ Pi.prototype.getPiDee = function(){return this.piDee;}
 Pi.prototype.setIP = function(){this.ip=ip;}
 Pi.prototype.setLoc = function(){this.loc=loc;}
 Pi.prototype.setOrg = function(){this.org=org;}
+Pi.prototype.getIsolated = function(){return this.isolated;}
 
 module.exports = Pi;

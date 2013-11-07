@@ -12,7 +12,7 @@ exports.init = function(DATABASE, fs, db){
 			//	orgcode		TEXT					Organization the Pi should display images for (set in XBMC)
 			//	pifolder	TEXT					The path the Pi is looking at for media
 			//	mediapath 	TEXT					List of all the paths the Pi has media from
-			db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, pifolder TEXT, mediapath TEXT)");
+			db.run("CREATE TABLE IF NOT EXISTS Pidentities (pID INTEGER PRIMARY KEY, timestamp TEXT, ipaddress TEXT, location TEXT, orgcode TEXT, pifolder TEXT, mediapath TEXT, isolated INTEGER)");
 	
 			//Clear the current iptvTable. Then create a new iptvTable
 			db.run("DROP TABLE IF EXISTS iptvTable");
