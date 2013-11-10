@@ -197,7 +197,7 @@ Pi.prototype.playEmergency = function(){
 	
 	return this.callJSONRPC(data);
 };
-Pi.prototype.playIPTV = function(){
+Pi.prototype.playIPTV = function(channel){
 	var data = {
 		jsonrpc: "2.0",
 		id: "0",
@@ -205,7 +205,7 @@ Pi.prototype.playIPTV = function(){
 		params: {
 			wait: true,
 			addonid: "service.digital.signage",
-			params: ["iptv"]
+			params: ["iptv", channel]
 		}
 	};
 	

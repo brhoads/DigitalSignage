@@ -20,8 +20,9 @@
 		<title>Digital Signage Overrides</title>
 		<link rel="stylesheet" type="text/css" href="css/styles.css"> 
 		<link rel="stylesheet" type="text/css" href="css/foundation.css">
+		<script src="js/vendor/custom.modernizr.js"></script>
 	</head>
-	
+	<!--[if        lt        IE        9]><p        class=chromeframe>Your        browser        is so <em>NOT STANDARDS-COMPLIANT</em> that it's not worth developing for! See if Chrome or Firefox is installed on this machine, <a        href="http://browsehappy.com/">upgrade        to        a        different        browser</a>        or        <a        href="http://www.google.com/chromeframe/?redirect=true">install        Google        Chrome        Frame</a>        to        experience        this        site.</p><![endif]-->
 	<body>
 		<!-- Title Row -->
 		<div class="row">
@@ -84,7 +85,9 @@
 					<label for="checkbox{{piDee}}">
 					<input class="picheck" type="checkbox" id="checkbox{{piDee}}" name="{{piDee}}" style="display:none;"/>
 					<span class="custom checkbox" id="{{piDee}}"></span>
-					{{!ip}}{{location}}{{org}}
+					{{location}},{{org}}
+					<span class="radius alert label statuslabel" id="{{ip}}"></span>
+					<!-- secondary = offline, alert = emergency, ''=iptv, success = online -->
 					</label>
 				</li>
 				{{/each}}
@@ -116,7 +119,8 @@
 
 		<!-- AJAX Status Modal -->
 		<div id="statusModal" class="reveal-modal">
-			<h2>Overrides Status Sent<h2>
+			<h2 id="statusModalTitle">Overrides Status Sent<h2>
+			<p id="statusModalContent"></p>
 			<a class="close-reveal-modal">&#215;</a>
 		</div>
 		
@@ -131,49 +135,8 @@
 		<script src="js/foundation/foundation.reveal.js"></script>
 		<script>
 			//Load Foundation
-			$(document).foundation();
-			$('#piSwitchOn,#piSwitchOff').change(function(e){
-				if($('#piSwitchOn').prop('checked')){
-					//All the Pis need selected
-					$('.picheck').each(function(index){
-						//$(this).prop('checked',true);
-						$(this).next().addClass('checked');
-						//$('span.custom.checkbox').toggleClass('checked');
-					});
-				} else {
-					//All the Pis need unselected
-					$('.picheck').each(function(index){
-						$(this).next().removeClass('checked');
-					});
-				}
-			});
-			$(".custom input[type='checkbox']").parent().click(function() {
-				if($(this).children("input").is(":checked") !== $(this).children("span").is(".checked")) {
-					if($(this).children("input").is(":checked")) {
-						$(this).children("span").addClass("checked");
-					} else {
-						$(this).children("span").removeClass("checked");
-					}
-				}
-			});
-			$('#overrideTypeDropdown').change(function(e){
-				console.log($(this).val());
-				if($(this).val() === 'Play IPTV'){
-					$('#iptvDiv').removeClass('hidden');
-				} else {
-					$('#iptvDiv').addClass('hidden');
-				}
-			});
-			$('#submitButton').click(function(e){
-				//Scrape all the checkboxes and get the piDees from them
-				//	this will then be POSTed to the server which will then
-				//	tell the Pis to handle the override
-				var piDees = new Array();
-				$('.custom.checkbox.checked').each(function(index){
-					piDees.push($(this).attr('id'));
-				});		
-				
-			});
+			$(document).foundation();			
 		</script>		
+		<script src="js/ds.js"></script>
 	</body>
 </html>
