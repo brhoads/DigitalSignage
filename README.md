@@ -6,7 +6,8 @@ A solution for displaying media in a nested file structure
 Hosts
 
 ##Raspberry Pi Client
-Pi
+
+
 
 ##Getting Started
 
@@ -23,7 +24,6 @@ Installation:
 
 	git clone https://github.com/brhoads/DigitalSignage.git
 	git checkout -b remotes/origin/master
-	cd VADER
 	Add Python to System Path
 	Open ports 8080 and 8124 in the firewall for in and outbound traffic
 	npm install
@@ -32,12 +32,18 @@ Installation:
 	net start digital-signage
 	-- Run as User (Debugging) --
 	Open terminal in admin mode
-	node PiBrains.js
+	node server.js
 	
 ####Raspberry Pi
 
-Prerequisites:
-* [OpenElec] (http://openelec.tv/get-openelec/download/viewcategory/10-raspberry-pi-builds) installed on a Raspberry Pi. The addon should work with any XBMC client, however it has only be tested with OpenELEC on the Raspberry Pi. 
-
-Installation: 
-	Use scp to copy service.digital.signage/ to /storage/.xbmc/addons/
+Installation:
+* Use `win32diskimager` to flash any [Openelec 3.2.x](http://openelec.tv/get-openelec/download/viewcategory/10-raspberry-pi-builds) image to an SD card
+* Boot the Pi with the vanilla OpenELEC image and configure hostname, etc
+* Navigate to the pictures panel to get rid of the "first time" screen
+* Put SD card back in PC and copy `KERNEL` and `SYSTEM` on top of the files on the SD card
+* Rename `KERNEL` to `kernel.img`
+* Boot the Pi with the SD card and go to the Digital Signage settings
+* Configure Server IP, Location, Org, and Isolation
+* Change the skin to "DigitalSignage" (currently in a testing only phase)
+* Reboot Pi 
+* Enjoy the signage (maybe. reboot as needed)
