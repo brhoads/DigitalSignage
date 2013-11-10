@@ -9,17 +9,25 @@
 //	send - launches XBMC notification on the given Pi
 
 q = require('q');
+Pi.http = require('http');
 
 function Pi(ip, location, org, piDee, isolated) {
 	this.ip = ip;
 	this.location = location;
 	this.org = org;
 	this.piDee = piDee;
-	this.isolated = typeof isolated !== 'undefined' ? isolated : 0; //0 == false!
 	this.http = '';
+	
+	if(typeof isolated !== 'undefined'){
+		if(isolated === 'true'){
+			this.isolated=1;
+		} else {
+			this.isolated=0;
+		}
+	} else {
+		this.isolated=0;
+	}
 }
-
-Pi.http = require('http');
 
 Pi.prototype.setDependencies = function(http){
 	this.http = http;
@@ -32,6 +40,12 @@ Pi.prototype.createFromDB = function(piDee, db){
 	
 	var stmt = db.prepare("SELECT ipaddress, location, orgcode, isolated FROM Pidentities WHERE rowid = "+piDee);
 	stmt.get(function(err, row){
+		
+		if(err){
+			console.log('ERROR: Could not recreate from DB'+err);
+			promise.reject(err);
+		}
+		
 		self.ip = row.ipaddress;
 		self.location = row.location;
 		self.org = row.orgcode;

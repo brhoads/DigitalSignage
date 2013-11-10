@@ -35,7 +35,8 @@
 	"findit2":"0.2.0",
 	"hound":"1.0.4",
 	"express":"3.4.x",
-	"q":"0.9.x"
+	"q":"0.9.x",
+	"hbs":"2.4.x"
   },
   "devDependencies": {
     "grunt-contrib-jshint": "~0.6.4",
