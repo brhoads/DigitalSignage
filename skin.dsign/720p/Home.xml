@@ -465,6 +465,9 @@
 				<effect type="zoom" start="100" end="80" center="640,360" easing="in" tween="back" time="300" />
 				<effect type="fade" start="100" end="0" time="300" />
 			</animation>
+			<animation type="Conditional" condition="System.IdleTime(5)" reversible="true">
+				<effect type="fade" start="100" end="0" time="400" />
+			</animation>
 			<control type="image">
 				<description>Background End image</description>
 				<posx>0</posx>
@@ -725,6 +728,9 @@
 			<animation type="WindowClose" reversible="false">
 				<effect type="zoom" start="100" end="80" center="640,360" easing="in" tween="back" time="300" />
 				<effect type="fade" start="100" end="0" time="300" />
+			</animation>
+			<animation type="Conditional" condition="System.IdleTime(5)" reversible="true">
+				<effect type="fade" start="100" end="0" time="400" />
 			</animation>
 			<control type="group" id="9001">
 				<posx>0</posx>
