@@ -173,7 +173,7 @@
 			<font>font14</font>
 			<textcolor>white</textcolor>
 			<shadowcolor>black</shadowcolor>
-			<pauseatend>2000</pauseatend>
+			<pauseatend>5000</pauseatend>
 			<textoffsetx>20</textoffsetx>
 		</control>
 		<!-- media infos -->

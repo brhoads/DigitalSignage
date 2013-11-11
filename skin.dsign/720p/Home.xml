@@ -7,9 +7,9 @@
 		<include>CommonBackground</include>
 		<control type="image">
 			<posx>0</posx>
-			<posy>90r</posy>
+			<posy>60r</posy>
 			<width>1280</width>
-			<height>90</height>
+			<height>60</height>
 			<texture>floor.png</texture>
 			<animation effect="fade" time="250" condition="Window.Previous(Home)">WindowOpen</animation>
 			<animation effect="fade" time="250" condition="Window.Next(Home)">WindowClose</animation>
@@ -47,7 +47,7 @@
 			<control type="label">
 				<description>Album Label</description>
 				<posx>170</posx>
-				<posy>265</posy>
+				<posy>365</posy>
 				<height>25</height>
 				<width>1000</width>
 				<label>$INFO[MusicPlayer.Artist,, - ]$INFO[MusicPlayer.Album]$INFO[musicplayer.discnumber, - $LOCALIZE[427]:]</label>
@@ -60,7 +60,7 @@
 			<control type="label">
 				<description>Title label</description>
 				<posx>170</posx>
-				<posy>285</posy>
+				<posy>385</posy>
 				<height>30</height>
 				<width>1000</width>
 				<label>$INFO[MusicPlayer.Title]</label>
@@ -73,7 +73,7 @@
 			<control type="label">
 				<description>Time Label</description>
 				<posx>170</posx>
-				<posy>310</posy>
+				<posy>410</posy>
 				<height>30</height>
 				<width>300</width>
 				<label>$INFO[Player.Time]$INFO[Player.Duration,[COLOR=blue] / [/COLOR]]</label>
@@ -180,7 +180,7 @@
 					<bordersize>4</bordersize>
 				</control>
 				<control type="image">
-					<posx>360</posx>
+					<posx>460</posx>
 					<posy>5</posy>
 					<width>30</width>
 					<height>25</height>
@@ -189,7 +189,7 @@
 				</control>
 				<control type="label">
 					<description>Is Recording Header label</description>
-					<posx>350</posx>
+					<posx>450</posx>
 					<posy>5</posy>
 					<height>25</height>
 					<width>400</width>
@@ -202,7 +202,7 @@
 				</control>
 				<control type="label">
 					<description>NextRecordingDateTime</description>
-					<posx>390</posx>
+					<posx>490</posx>
 					<posy>30</posy>
 					<height>25</height>
 					<width>400</width>
@@ -215,7 +215,7 @@
 				</control>
 				<control type="label">
 					<description>NextRecordingTitle Channel</description>
-					<posx>390</posx>
+					<posx>490</posx>
 					<posy>50</posy>
 					<height>30</height>
 					<width>800</width>
@@ -251,7 +251,7 @@
 				<control type="label">
 					<description>Title label</description>
 					<posx>190</posx>
-					<posy>285</posy>
+					<posy>385</posy>
 					<height>30</height>
 					<width>1000</width>
 					<label>$INFO[VideoPlayer.Title]</label>
@@ -264,7 +264,7 @@
 				<control type="label">
 					<description>Time Label</description>
 					<posx>190</posx>
-					<posy>310</posy>
+					<posy>410</posy>
 					<height>30</height>
 					<width>300</width>
 					<label>$INFO[Player.Time]$INFO[Player.Duration,[COLOR=blue] / [/COLOR]]</label>
@@ -291,7 +291,7 @@
 				<control type="label">
 					<description>Channel label</description>
 					<posx>160</posx>
-					<posy>265</posy>
+					<posy>365</posy>
 					<height>25</height>
 					<width>660</width>
 					<label>$INFO[VideoPlayer.ChannelName]</label>
@@ -304,7 +304,7 @@
 				<control type="label">
 					<description>Title label</description>
 					<posx>160</posx>
-					<posy>285</posy>
+					<posy>385</posy>
 					<height>30</height>
 					<width>1000</width>
 					<label>$INFO[VideoPlayer.Title]</label>
@@ -317,7 +317,7 @@
 				<control type="label">
 					<description>Time Label</description>
 					<posx>160</posx>
-					<posy>310</posy>
+					<posy>410</posy>
 					<height>30</height>
 					<width>300</width>
 					<label>$INFO[Player.Time]$INFO[Player.Duration,[COLOR=blue] / [/COLOR]]</label>
@@ -344,7 +344,7 @@
 				<control type="label">
 					<description>Studio label</description>
 					<posx>160</posx>
-					<posy>265</posy>
+					<posy>365</posy>
 					<height>25</height>
 					<width>1000</width>
 					<label>$INFO[VideoPlayer.Studio]</label>
@@ -357,7 +357,7 @@
 				<control type="label">
 					<description>Title label</description>
 					<posx>160</posx>
-					<posy>285</posy>
+					<posy>385</posy>
 					<height>30</height>
 					<width>1000</width>
 					<label>$INFO[VideoPlayer.Title]$INFO[VideoPlayer.Year,[COLOR=grey] (,)[/COLOR]]</label>
@@ -370,7 +370,7 @@
 				<control type="label">
 					<description>Time Label</description>
 					<posx>160</posx>
-					<posy>310</posy>
+					<posy>410</posy>
 					<height>30</height>
 					<width>300</width>
 					<label>$INFO[Player.Time]$INFO[Player.Duration,[COLOR=blue] / [/COLOR]]</label>
@@ -455,7 +455,7 @@
 		<control type="group">
 			<description>Controls for currently playing media</description>
 			<posx>545r</posx>
-			<posy>370</posy>
+			<posy>470</posy>
 			<animation effect="slide" start="0,0" end="365,0" time="300" condition="!Player.HasMedia">conditional</animation>
 			<animation type="WindowOpen" reversible="false">
 				<effect type="zoom" start="80" end="100" center="640,360" easing="out" tween="back" time="300" />
@@ -717,7 +717,7 @@
 			</control>
 		</control>
 		<control type="group">
-			<posy>400</posy>
+			<posy>500</posy>
 			<animation type="WindowOpen" reversible="false">
 				<effect type="zoom" start="80" end="100" center="640,360" easing="out" tween="back" time="300" />
 				<effect type="fade" start="0" end="100" time="300" />
