@@ -1,0 +1,142 @@
+<html>
+	
+	<!--	
+	______ _       _ _        _ _____ _                              
+	|  _  (_)     (_) |      | /  ___(_)                             
+	| | | |_  __ _ _| |_ __ _| \ `--. _  __ _ _ __   __ _  __ _  ___ 
+	| | | | |/ _` | | __/ _` | |`--. \ |/ _` | '_ \ / _` |/ _` |/ _ \
+	| |/ /| | (_| | | || (_| | /\__/ / | (_| | | | | (_| | (_| |  __/
+	|___/ |_|\__, |_|\__\__,_|_\____/|_|\__, |_| |_|\__,_|\__, |\___|
+			  __/ |                      __/ |             __/ |     
+			 |___/                      |___/             |___/      
+					www.github.com/brhoads/DigitalSignage
+	
+	NOTE: Uses Foundation and thus jQuery so feel free to use any jQuery constructs
+		  instead of the vanilla JS counterpart	
+	-->
+
+
+	<head>
+		<title>Digital Signage Overrides</title>
+		<link rel="stylesheet" type="text/css" href="css/styles.css"> 
+		<link rel="stylesheet" type="text/css" href="css/foundation.css">
+		<script src="js/vendor/custom.modernizr.js"></script>
+	</head>
+	<!--[if        lt        IE        9]><p        class=chromeframe>Your        browser        is so <em>NOT STANDARDS-COMPLIANT</em> that it's not worth developing for! See if Chrome or Firefox is installed on this machine, <a        href="http://browsehappy.com/">upgrade        to        a        different        browser</a>        or        <a        href="http://www.google.com/chromeframe/?redirect=true">install        Google        Chrome        Frame</a>        to        experience        this        site.</p><![endif]-->
+	<body>
+		<!-- Title Row -->
+		<div class="row">
+			<div class="large-2 columns">
+				<img src="img/logo.png" alt="NASA Logo" height="100px" width="100px"/>
+			</div>
+			<div class="large-10 columns">
+				<h2>Digital Signage Overrides</h2>
+				<h5>Version 1.0.0</h5>
+			</div>			
+		</div>
+		
+		<!-- Overrides Selection -->
+		<div class="row">
+			<!-- Toggle Switch -->
+			<div class="large-2 columns">
+  			    <label>Override Status</label>
+				<div class="small-2 switch small round">
+				  <input id="overrideSwitchOff" name="switch-override" type="radio">
+				  <label for="overrideSwitchOff" onclick="">Off</label>
+
+				  <input id="overrideSwitchOn" name="switch-override" type="radio" checked>
+				  <label for="overrideSwitchOn" onclick="">On</label>
+
+				  <span></span>
+				</div>
+			</div>
+			<!-- Emergency/IPTV Selection -->
+			<div class="large-4 columns">
+				<form class="custom">
+				<label for="overrideTypeDropdown">Override Selection</label>
+				<select id="overrideTypeDropdown" class="medium" style="margin-top:3px">
+					<option>Emergency Image</option>
+					<option>Play IPTV</option>
+				</select>
+				</form>
+			</div>
+			<!-- IPTV Channel Dropdown -->
+			<div id="iptvDiv" class="large-4 columns hidden">
+				<form class="custom">
+				<label for="iptvDropdown">IPTV Channel</label>
+				<select id="iptvDropdown" class="medium">
+					{{#each iptvChannels}}
+						<option value="{{ip}}">{{name}}</option>
+					{{/each}}
+				</select>
+				</form>
+			</div>
+			<!-- Spacing Div -->
+			<div class="large-2 columns">
+			</div>
+		</div>
+		<!-- Pi Selection -->
+		<div class="row">
+			<div class="panel">
+			<form class="custom">
+			<ul class="small-block-grid-4">
+				{{#each pis}}
+				<li>
+					<label for="checkbox{{piDee}}">
+					<input class="picheck" type="checkbox" id="checkbox{{piDee}}" name="{{piDee}}" style="display:none;"/>
+					<span class="custom checkbox" id="{{piDee}}"></span>
+					{{location}},{{org}}
+					<span class="radius alert label statuslabel" id="{{ip}}"></span>
+					<!-- secondary = offline, alert = emergency, ''=iptv, success = online -->
+					</label>
+				</li>
+				{{/each}}
+			</ul>
+			</form>
+			</div>
+		</div>
+		<!-- Toggle all Switch -->
+		<div class="row">
+			<div class="large-2 columns">
+  			    <label>Toggle Pi Selection</label>
+				<div class="small-2 switch small round">
+				  <input id="piSwitchOff" name="switch-toggle" type="radio" checked>
+				  <label for="piSwitchOff" onclick="">Off</label>
+
+				  <input id="piSwitchOn" name="switch-toggle" type="radio">
+				  <label for="piSwitchOn" onclick="">On</label>
+
+				  <span></span>
+				</div>
+			</div>
+		</div>
+		<!-- Submit Button -->
+		<div class="row">
+			<div class="large-2 columns">
+				<a href="#" id="submitButton" class="small button alert radius">Submit Override</a>
+			</div>			
+		</div>
+
+		<!-- AJAX Status Modal -->
+		<div id="statusModal" class="reveal-modal">
+			<h2 id="statusModalTitle">Overrides Status Sent<h2>
+			<p id="statusModalContent"></p>
+			<a class="close-reveal-modal">&#215;</a>
+		</div>
+		
+		<!-- Foundation Necessitates -->		
+		<script>
+			document.write('<script src=' +
+			('__proto__' in {} ? 'js/vendor/zepto' : 'js/vendor/jquery') +
+			'.js><\/script>')
+		</script>		  
+		<script src="js/foundation.min.js"></script>
+		<script src="js/foundation/foundation.forms.js"></script>
+		<script src="js/foundation/foundation.reveal.js"></script>
+		<script>
+			//Load Foundation
+			$(document).foundation();			
+		</script>		
+		<script src="js/ds.js"></script>
+	</body>
+</html>

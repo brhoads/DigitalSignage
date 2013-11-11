@@ -10,11 +10,13 @@ var mkdirp = require('mkdirp');
 var path = require('path');
 var findit2 = require('findit2');
 var hound = require('hound');
+var q = require('q');
+var express = require('express');
+var hbs = require('hbs');
+
 var fwd = require('./lib/filewatchdog.js');
 var database = require('./lib/database.js');
-var express = require('express');
 var Pi = require('./lib/pi.js');
-var q = require('q');
 
 //--------------------------------------------------------------------------------------------------
 // Constants
@@ -267,12 +269,29 @@ function populateFolder(aPi){
 piServer.listen(8124);
 piServer.use(express.bodyParser());
 piServer.post('/',function(request, response){
+
+	console.log(request.body.org + ' ' + request.body.location);	
+
 	//Check for Proper request from Pi
 	if(request.body.hasOwnProperty('location') &&
 	   request.body.hasOwnProperty('org') &&
 	   request.body.hasOwnProperty('piip') &&
 	   request.body.hasOwnProperty('piDee')){
 		//We have a good request
+		
+		//Check to see if this Pi still has defaults and needs to be configured
+		if((request.body.org === 'Org Code') || (request.body.location === 'Location')) {
+			console.log('Pi found, needs configured');
+			//The pi needs to be reconfigured
+			var newPi = new Pi(request.body.piip);
+			newPi.sendNotification('Configuration Required','Please configure the Pi via the settings menu and reboot',10000);
+			//Send back an id of -1
+			response.type('application/json');
+			response.send('{"piDee":"-1"}');	
+			
+			//Finish off this HTTP post
+			return;
+		};		
 		
 		var newPi = new Pi(request.body.piip, request.body.location, request.body.org, request.body.piDee, request.body.isolated);
 		//
@@ -319,29 +338,56 @@ piServer.post('/',function(request, response){
 			var oldPi = new Pi();
 			
 			oldPi.createFromDB(newPi.getPiDee(), db)
-			function wait(){
-				console.log('waiting');
-				if(!oldPi.getPiDee()){
-						setTimeout(wait,100);
+			.then(function(oldPi){
+				console.log('Old Pi: '+oldPi.getPiDee()+oldPi.getLoc()+oldPi.getOrg()+oldPi.getIP());
+				console.log('New Pi: '+newPi.getPiDee()+newPi.getLoc()+newPi.getOrg()+newPi.getIP());
+				
+				if((oldPi.getIP() === newPi.getIP()) &&
+				 (oldPi.getLoc() === newPi.getLoc()) &&
+				 (oldPi.getOrg() === newPi.getOrg()) &&
+				 (oldPi.getIsolated() === newPi.getIsolated())){
+						console.log(newPi.getPiDee()+' hasn\'t changed');
+						newPi.playMedia();
 				} else {
-						console.log('Old Pi: '+oldPi.getPiDee()+oldPi.getLoc()+oldPi.getOrg());
-						console.log('New Pi: '+newPi.getPiDee()+newPi.getLoc()+newPi.getOrg());
-						
-						if((oldPi.getIP() === newPi.getIP()) &&
-						 (oldPi.getLoc() === newPi.getLoc()) &&
-						 (oldPi.getOrg() === newPi.getOrg())){
-								console.log(newPi.getPiDee()+' hasn\'t changed');
-								newPi.playMedia();
-						} else {
-								console.log('Pi '+newPi.getPiDee()+' has different settings, updating');
-								//newPi.updateDB(db); //Update database to reflect the new settings
-								newPi.playMedia();
-						}
+						console.log('Pi '+newPi.getPiDee()+' has different settings, updating');
+						newPi.updateDB(db); //Update database to reflect the new settings
+						populateFolder(newPi)
+						.then(function(data){
+							console.log('Playing Pi after changes');
+							return newPi.playMedia();
+						});								
 				}
-			}
-		
-			wait();
-
+			}, function(error){
+				newPi.getNewPidee(db)
+				.then(function(data){
+					promise = q.defer();					
+					console.log('New Pi has a piDee of '+data);
+					//Set this Pi to have that piDee
+					newPi.piDee = data;					
+					response.type('application/json');
+					response.send('{"piDee":'+newPi.piDee+'}');					
+					promise.resolve(true);					
+					return promise.promise;				
+				})
+				//Send the piDee via JSONRPC
+				.then(function(data){
+					console.log('Setting piDee via JSON');
+					return newPi.setPiDeeJSON();
+				})
+				//Create a new Folder for the Pi
+				.then(function(data){
+					return createNewFolder(newPi);
+				})
+				//Populate the Folder with Media
+				.then(function(data){
+					return populateFolder(newPi);
+				})
+				//Tell the Pi that it can play the Media now
+				.then(function(data){
+					console.log('Playing Pi');
+					return newPi.playMedia();
+				});		
+			})
 		}
 	} else {
 		//We have a bad request
@@ -350,10 +396,103 @@ piServer.post('/',function(request, response){
 	}
 });
 
+function getAllPis(){
+	var promise = q.defer();
+	var pis = new Array();
+	var pi = '';
+	
+	var stmt = db.prepare('SELECT pID, ipaddress, location, orgcode FROM Pidentities');
+	 
+	stmt.each(function(err, row){
+		pi = new Pi(row.ipaddress, row.location, row.orgcode, row.pID);
+		pis.push(pi);
+	});
+	 
+	stmt.finalize(function(){
+		promise.resolve(pis);
+	});
+	
+	return promise.promise;
+}
+
+function getAllChannels(){
+	var promise = q.defer();
+	var channels = new Array();
+	var channel = '';
+	
+	var stmt = db.prepare('SELECT * FROM iptvTable');
+	
+	stmt.each(function(err,row){
+		channel={'name':row.channel_name,'ip':row.ip_address};
+		channels.push(channel);
+	});
+	
+	stmt.finalize(function(){
+		promise.resolve(channels);
+	});
+	
+	return promise.promise;
+}
+
 //--------------------------------------------------------------------------------------------------
 // Emergency Web Server
+emergencyServer.set('view engine','html');
+emergencyServer.engine('html',hbs.__express);
+emergencyServer.use(express.static('public'));
+emergencyServer.use(express.bodyParser());
 emergencyServer.listen(8080);
+
 emergencyServer.get('/',function(request, response){
-	response.send('<html><body>Testing Emergency</body></html>');
+	
+	var piList = '';
+	
+	getAllPis()
+	.then(function(pis){
+		piList = pis;
+		return getAllChannels()
+	})
+	.then(function(channels){
+		response.render('index',{'pis':piList, 'iptvChannels':channels});
+	});
+});
+emergencyServer.post('/',function(request,response){
+	if(request.body.hasOwnProperty('piDees') && 
+	   request.body.hasOwnProperty('location') &&
+	   request.body.hasOwnProperty('state')){
+		//We have a good request
+		console.dir(request.body);
+		var piDees = request.body.piDees;
+		//Get all the Pis and then iterate over them checking for the specific piDee
+		getAllPis()
+		.then(function(pis){
+			var promise = q.defer();
+			
+			for(index in pis){
+				console.log(pis[index].getPiDee());
+				if( piDees.indexOf(pis[index].getPiDee().toString()) !== -1){
+					console.log('Hit on '+ pis[index].getPiDee());
+					if(request.body.state){					
+						if(request.body.location === "Emergency"){
+							pis[index].playEmergency();
+						} else {
+							pis[index].playIPTV(request.body.channel);
+						}						
+					} else {
+						pis[index].playMedia();
+					}
+				}
+			}
+			//Somehow all the above generated promises (from .play* ) can be linked into
+			// a promise array, which should be returned here instead of just true
+			promise.resolve(true);
+			return promise.promise;
+		})
+		.then(function(data){		
+			response.send('If you\'re gonna build a time machine into a car, why not do it with some style?');
+		});
+	} else {
+		//We have a bad request
+		response.send('ERROR - no piDee');
+	}
 });
 
