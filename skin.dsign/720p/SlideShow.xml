@@ -157,24 +157,83 @@
 			</control>
 		</control>
 		<!-- Not working right -->
-		<control type="fadelabel">
-			<description>Test fadelabel</description>
-			<posx>60</posx>
-			<posy>600</posy>
-			<width>250</width>
-			<visible>true</visible>
-			<scroll>false</scroll>
-			<scrollout>false</scrollout>
-			<label>REFRESH</label>
-			<info>Window(Weather).Property(Day0.Title)</info>
-			<info>Window(Weather).Property(Day1.Title)</info>
-			<info>Window(Weather).Property(Day2.Title)</info>
-			<info>Window(Weather).Property(Day3.Title)</info>
-			<font>font14</font>
-			<textcolor>white</textcolor>
-			<shadowcolor>black</shadowcolor>
-			<pauseatend>5000</pauseatend>
-			<textoffsetx>20</textoffsetx>
+		<control type="group">
+			<control type="fadelabel">
+				<description>Test fadelabel</description>
+				<posx>60</posx>
+				<posy>600</posy>
+				<width>250</width>
+				<visible>true</visible>
+				<scroll>false</scroll>
+				<scrollout>false</scrollout>
+				<label>REFRESH</label>
+				<info>Window(Weather).Property(Day0.Title)</info>
+				<info>Window(Weather).Property(Day1.Title)</info>
+				<info>Window(Weather).Property(Day2.Title)</info>
+				<info>Window(Weather).Property(Day3.Title)</info>
+				<font>font14</font>
+				<textcolor>white</textcolor>
+				<shadowcolor>black</shadowcolor>
+				<pauseatend>5000</pauseatend>
+				<textoffsetx>20</textoffsetx>
+			</control>
+			<control type="fadelabel">
+				<description>Test fadelabel 2</description>
+				<posx>60</posx>
+				<posy>630</posy>
+				<width>250</width>
+				<visible>true</visible>
+				<scroll>false</scroll>
+				<scrollout>false</scrollout>
+				<label>REFRESH</label>
+				<info>Window(Weather).Property(Day0.HighTemp)</info>
+				<info>Window(Weather).Property(Day1.HighTemp)</info>
+				<info>Window(Weather).Property(Day2.HighTemp)</info>
+				<info>Window(Weather).Property(Day3.HighTemp)</info>
+				<font>font14</font>
+				<textcolor>white</textcolor>
+				<shadowcolor>black</shadowcolor>
+				<pauseatend>5000</pauseatend>
+				<textoffsetx>20</textoffsetx>
+			</control>
+			<control type="fadelabel">
+				<description>Test fadelabel 3</description>
+				<posx>60</posx>
+				<posy>660</posy>
+				<width>250</width>
+				<visible>true</visible>
+				<scroll>false</scroll>
+				<scrollout>false</scrollout>
+				<label>REFRESH</label>
+				<info>Window(Weather).Property(Day0.LowTemp)</info>
+				<info>Window(Weather).Property(Day1.LowTemp)</info>
+				<info>Window(Weather).Property(Day2.LowTemp)</info>
+				<info>Window(Weather).Property(Day3.LowTemp)</info>
+				<font>font14</font>
+				<textcolor>white</textcolor>
+				<shadowcolor>black</shadowcolor>
+				<pauseatend>5000</pauseatend>
+				<textoffsetx>20</textoffsetx>
+			</control>
+			<control type="fadelabel">
+				<description>Test fadelabel 4</description>
+				<posx>60</posx>
+				<posy>690</posy>
+				<width>250</width>
+				<visible>true</visible>
+				<scroll>false</scroll>
+				<scrollout>false</scrollout>
+				<label>REFRESH</label>
+				<info>Window(Weather).Property(Day0.Outlook)</info>
+				<info>Window(Weather).Property(Day1.Outlook)</info>
+				<info>Window(Weather).Property(Day2.Outlook)</info>
+				<info>Window(Weather).Property(Day3.Outlook)</info>
+				<font>font14</font>
+				<textcolor>white</textcolor>
+				<shadowcolor>black</shadowcolor>
+				<pauseatend>5000</pauseatend>
+				<textoffsetx>20</textoffsetx>
+			</control>
 		</control>
 		<!-- media infos -->
 		<control type="group">
