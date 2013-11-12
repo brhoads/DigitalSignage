@@ -35,7 +35,7 @@
 			<width>1280</width>
 			<height>720</height>
 			<texture>overlay.png</texture>
-		</control>
+		</control>	
 		
 		<!-- date/time group -->
 		<control type="group">
@@ -256,8 +256,8 @@
 				<width>780</width>
 				<font>font12</font>
 				<urlset>1</urlset>
-				<textcolor>blue</textcolor>
-				<titlecolor>green</titlecolor>
+				<textcolor>black</textcolor>
+				<titlecolor>blue</titlecolor>
 				<headlinecolor>yellow</headlinecolor>
 			</control>
 			<!--
