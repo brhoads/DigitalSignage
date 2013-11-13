@@ -167,6 +167,7 @@
 			</control>
 		</control>
 		<!-- Not working right -->
+		<!---------------------------------------------
 		<control type="group">
 			<control type="fadelabel">
 				<description>Test fadelabel</description>
@@ -241,6 +242,7 @@
 				<pauseatend>5000</pauseatend>
 			</control>
 		</control>
+		---------------------------------------------->
 		
 		<!-- RSS FEEDS -->
 		<control type="group">
