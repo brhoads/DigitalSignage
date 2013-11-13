@@ -468,9 +468,7 @@ emergencyServer.post('/',function(request,response){
 			var promise = q.defer();
 			
 			for(index in pis){
-				console.log(pis[index].getPiDee());
 				if( piDees.indexOf(pis[index].getPiDee().toString()) !== -1){
-					console.log('Hit on '+ pis[index].getPiDee());
 					if(request.body.state){					
 						if(request.body.location === "Emergency"){
 							pis[index].playEmergency();
