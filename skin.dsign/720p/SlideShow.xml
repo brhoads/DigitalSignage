@@ -27,10 +27,20 @@
 				<label>31043</label>
 			</control>
 		</control>
+		
+		<!-- overlay -->
+		<control type="image">
+			<posx>0</posx>
+			<posy>0</posy>
+			<width>1280</width>
+			<height>720</height>
+			<texture>overlay.png</texture>
+		</control>	
+		
 		<!-- date/time group -->
 		<control type="group">
 			<posx>220r</posx>
-			<posy>5</posy>
+			<posy>70r</posy>
 			<control type="label">
 				<description>Clock label</description>
 				<posx>200</posx>
@@ -60,8 +70,8 @@
 		</control>
 		<!-- weather group -->
 		<control type="group">
-			<posx>20</posx>
-			<posy>5</posy>
+			<posx>0</posx>
+			<posy>70r</posy>
 			<visible>!IsEmpty(Weather.Plugin)</visible>
 			<control type="label">
 				<description>High Label</description>
@@ -157,11 +167,12 @@
 			</control>
 		</control>
 		<!-- Not working right -->
+		<!---------------------------------------------
 		<control type="group">
 			<control type="fadelabel">
 				<description>Test fadelabel</description>
-				<posx>60</posx>
-				<posy>600</posy>
+				<posx>0</posx>
+				<posy>0</posy>
 				<width>250</width>
 				<visible>true</visible>
 				<scroll>false</scroll>
@@ -175,12 +186,11 @@
 				<textcolor>white</textcolor>
 				<shadowcolor>black</shadowcolor>
 				<pauseatend>5000</pauseatend>
-				<textoffsetx>20</textoffsetx>
 			</control>
 			<control type="fadelabel">
 				<description>Test fadelabel 2</description>
-				<posx>60</posx>
-				<posy>630</posy>
+				<posx>0</posx>
+				<posy>30</posy>
 				<width>250</width>
 				<visible>true</visible>
 				<scroll>false</scroll>
@@ -194,12 +204,11 @@
 				<textcolor>white</textcolor>
 				<shadowcolor>black</shadowcolor>
 				<pauseatend>5000</pauseatend>
-				<textoffsetx>20</textoffsetx>
 			</control>
 			<control type="fadelabel">
 				<description>Test fadelabel 3</description>
-				<posx>60</posx>
-				<posy>660</posy>
+				<posx>0</posx>
+				<posy>60</posy>
 				<width>250</width>
 				<visible>true</visible>
 				<scroll>false</scroll>
@@ -213,12 +222,11 @@
 				<textcolor>white</textcolor>
 				<shadowcolor>black</shadowcolor>
 				<pauseatend>5000</pauseatend>
-				<textoffsetx>20</textoffsetx>
 			</control>
 			<control type="fadelabel">
 				<description>Test fadelabel 4</description>
-				<posx>60</posx>
-				<posy>690</posy>
+				<posx>0</posx>
+				<posy>90</posy>
 				<width>250</width>
 				<visible>true</visible>
 				<scroll>false</scroll>
@@ -232,9 +240,40 @@
 				<textcolor>white</textcolor>
 				<shadowcolor>black</shadowcolor>
 				<pauseatend>5000</pauseatend>
-				<textoffsetx>20</textoffsetx>
 			</control>
 		</control>
+		---------------------------------------------->
+		
+		<!-- RSS FEEDS -->
+		<control type="group">
+			<posx>250</posx>
+			<posy>33r</posy>
+			<visible>system.getbool(lookandfeel.enablerssfeeds)</visible>
+			<include>Window_OpenClose_Animation</include>
+			<control type="rss">
+				<description>RSS feed</description>
+				<posx>0</posx>
+				<posy>0</posy>
+				<height>30</height>
+				<width>780</width>
+				<font>font12</font>
+				<urlset>1</urlset>
+				<textcolor>black</textcolor>
+				<titlecolor>blue</titlecolor>
+				<headlinecolor>yellow</headlinecolor>
+			</control>
+			<!--
+			<control type="image">
+				<description>RSS background</description>
+				<posx>1250</posx>
+				<posy>2</posy>
+				<width>24</width>
+				<height>24</height>
+				<texture>icon-rss.png</texture>
+			</control>
+			-->
+		</control>
+		
 		<!-- media infos -->
 		<control type="group">
 			<posx>20</posx>
