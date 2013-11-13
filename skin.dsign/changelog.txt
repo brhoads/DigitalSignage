@@ -1,3 +1,7 @@
 [B]0.1.0[/B]
 
 - Initial test
+
+[B]0.2.0[/B]
+
+-Initial functional overlay with Date/Time, Weather, and RSS
