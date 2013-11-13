@@ -95,11 +95,10 @@ function getPiStatus(){
 			type: "POST",
 			contentType:'application/json',			
 			data: JSON.stringify(data),
-			timeout: 5000,
+			timeout: 10000,
 			success: function(data, textStatus, jqXHR){	
-				var returned = JSON.parse(data);
-				console.log(returned);
-				if(returned.error){
+				console.log(data);
+				if(data.error){
 					$(self).removeClass('secondary')
 						   .removeClass('success')
 						   .addClass('alert');
@@ -122,5 +121,6 @@ function getPiStatus(){
 	});
 }
 $(document).ready(function(){
-	getPiStatus();
+	//getPiStatus();
+	window.setInterval(getPiStatus(),10000);
 });
