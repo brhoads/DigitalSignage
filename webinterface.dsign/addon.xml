@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<addon
+  id="webinterface.dsign"
+  version="1.0.0"
+  name="DSign Web Interface"
+  provider-name="NASA DD2">
+  <requires>
+    <import addon="xbmc.gui" version="4.0.0"/>
+    <import addon="xbmc.json" version="6.0.0"/>
+  </requires>
+  <extension
+    point="xbmc.gui.webinterface"/>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Digital Signage Web Interface.</summary>
+    <summary lang="en_US">Digital Signage Web Interface</summary>
+    <description lang="en">Digital Signage Web Interface</description>
+    <description lang="en_US">Digital Signage Web Interface</description>
+    <platform>all</platform>
+  </extension>
+</addon>
